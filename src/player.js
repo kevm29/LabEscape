@@ -187,8 +187,8 @@ function buildBody() {
   const coat = new THREE.Group();
   coat.visible = false;
   group.add(coat);
-  const gap = 0.75;
-  const coatBody = mk(new THREE.CylinderGeometry(0.175, 0.21, 0.95, 32, 4, true, Math.PI + gap / 2, Math.PI * 2 - gap), coatMat, 0, 0.93, TZ, coat);
+  const gap = 0.45;
+  const coatBody = mk(new THREE.CylinderGeometry(0.175, 0.27, 0.95, 32, 4, true, Math.PI + gap / 2, Math.PI * 2 - gap), coatMat, 0, 0.93, TZ, coat);
   coatBody.scale.set(1, 1, 0.82);
   // épaules
   const shoulders = mk(new THREE.CylinderGeometry(0.15, 0.175, 0.06, 32, 1, true, Math.PI + 0.2, Math.PI * 2 - 0.4), coatMat, 0, 1.43, TZ, coat);
@@ -198,7 +198,7 @@ function buildBody() {
   for (const s of [-1, 1]) {
     const theta = Math.PI + s * 0.68;
     const y = 0.72;
-    const r = 0.175 + (0.21 - 0.175) * ((1.405 - y) / 0.95) + 0.008;
+    const r = 0.175 + (0.27 - 0.175) * ((1.405 - y) / 0.95) + 0.008;
     const p = new THREE.Group();
     p.position.set(Math.sin(theta) * r, y, TZ + Math.cos(theta) * r * 0.82);
     p.rotation.y = theta;
@@ -245,7 +245,7 @@ export function buildMagnet() {
 }
 
 // ---------- Mains (attachées à la caméra, pour les animations) ----------
-function buildHand(mat, scale = 1) {
+function buildHand(mat, scale = 1, side = -1) {
   const g = new THREE.Group();
   const palm = new THREE.Mesh(new RoundedBoxGeometry(0.085, 0.03, 0.095, 3, 0.013), mat);
   g.add(palm);
@@ -253,7 +253,7 @@ function buildHand(mat, scale = 1) {
   const fingers = [];
   fingerLens.forEach((len, i) => {
     const f = new THREE.Group();
-    f.position.set(-0.03 + i * 0.02, 0, -0.047);
+    f.position.set(-side * (0.03 - i * 0.02), 0, -0.047); // index côté pouce
     const m = new THREE.Mesh(new THREE.CapsuleGeometry(0.0095, len, 4, 8), mat);
     m.rotation.x = Math.PI / 2;
     m.position.z = -len / 2;
@@ -263,12 +263,13 @@ function buildHand(mat, scale = 1) {
     fingers.push(f);
   });
   const thumb = new THREE.Group();
-  thumb.position.set(0.045, -0.004, -0.005);
+  // pouce côté intérieur (main gauche : +x, main droite : -x), paume vers le bas
+  thumb.position.set(-side * 0.045, -0.004, -0.005);
   const tm = new THREE.Mesh(new THREE.CapsuleGeometry(0.011, 0.045, 4, 8), mat);
   tm.rotation.x = Math.PI / 2;
   tm.position.z = -0.025;
   thumb.add(tm);
-  thumb.rotation.y = -0.7;
+  thumb.rotation.y = side * 0.7;
   g.add(thumb);
   fingers.push(thumb);
   const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.033, 0.09, 14), mat);
@@ -290,11 +291,11 @@ function buildHands() {
     const arm = new THREE.Group();
     arm.userData.side = s;
     rig.add(arm);
-    const hand = buildHand(skin);
+    const hand = buildHand(skin, 1, s);
     hand.g.rotation.z = s * -0.25;
     arm.add(hand.g);
     // gant (légèrement plus gros que la main)
-    const glove = buildHand(gloveMat, 1.08);
+    const glove = buildHand(gloveMat, 1.08, s);
     glove.g.rotation.z = s * -0.25;
     const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.046, 0.08, 16, 1, true), gloveMat);
     cuff.material = gloveMat.clone();
