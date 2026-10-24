@@ -5,9 +5,13 @@ const $ = (id) => document.getElementById(id);
 
 export class UI {
   constructor() {
-    this.modalOpen = false;
+    this.modalCount = 0;
     this.onModalClose = () => {};
     this.toastTimer = 0;
+  }
+
+  get modalOpen() {
+    return this.modalCount > 0;
   }
 
   setPrompt(text) {
@@ -16,7 +20,6 @@ export class UI {
     if (!text) { el.classList.remove('show'); return; }
     el.innerHTML = `<kbd>Clic</kbd> ${text}`;
     el.classList.add('show');
-    $('crosshair').classList.toggle('active', !!text);
   }
 
   clearPrompt() {
@@ -32,21 +35,23 @@ export class UI {
     this.toastTimer = setTimeout(() => el.classList.remove('show'), duration * 1000);
   }
 
+  // Les fenêtres peuvent s'empiler (ex. dialogue par-dessus le PC)
   openModal() {
-    this.modalOpen = true;
+    this.modalCount++;
     if (document.pointerLockElement) document.exitPointerLock();
   }
 
   closeModal() {
-    this.modalOpen = false;
-    this.onModalClose();
+    this.modalCount = Math.max(0, this.modalCount - 1);
+    if (this.modalCount === 0) this.onModalClose();
   }
 
-  dialog({ speaker = '', role = '', text = '', tone = 'info', button = 'Compris' }) {
+  dialog({ speaker = '', role = '', text = '', tone = 'info', button = 'Compris', avatar = 'DL' }) {
     return new Promise((resolve) => {
       this.openModal();
       const el = $('dialog');
       el.className = `modal show ${tone}`;
+      $('dialog-avatar').textContent = avatar;
       $('dialog-speaker').textContent = speaker;
       $('dialog-role').textContent = role;
       $('dialog-text').innerHTML = text;
@@ -55,18 +60,22 @@ export class UI {
       const close = () => {
         el.classList.remove('show');
         btn.removeEventListener('click', close);
-        removeEventListener('keydown', onKey);
+        removeEventListener('keydown', onKey, true);
         this.closeModal();
         resolve();
       };
-      const onKey = (e) => { if (e.code === 'Enter' || e.code === 'Escape' || e.code === 'Space') { e.preventDefault(); close(); } };
+      const onKey = (e) => {
+        if (e.code === 'Enter' || e.code === 'Escape' || e.code === 'Space' || e.code === 'NumpadEnter') {
+          e.preventDefault(); e.stopImmediatePropagation(); close();
+        }
+      };
       btn.addEventListener('click', close);
-      setTimeout(() => addEventListener('keydown', onKey), 250);
+      setTimeout(() => addEventListener('keydown', onKey, true), 250);
       btn.focus();
     });
   }
 
-  // Digicode : resolve(true) si le bon code est saisi, false si fermé
+  // Digicode à touches (souris ou clavier) : resolve(true) si le bon code est saisi
   keypad({ title = 'Digicode', length = 4, check }) {
     return new Promise((resolve) => {
       this.openModal();
@@ -121,27 +130,199 @@ export class UI {
     });
   }
 
-  updateObjectives(state, total) {
+  // Cadenas à molettes, tournées à la souris (clic sur ▲/▼ ou molette)
+  padlock({ title, code }) {
+    return new Promise((resolve) => {
+      this.openModal();
+      const el = $('padlock');
+      $('padlock-title').textContent = title;
+      const wheels = $('padlock-wheels');
+      const digits = [0, 0, 0, 0];
+      wheels.innerHTML = digits.map((_, i) => `
+        <div class="wheel" data-i="${i}">
+          <button class="up" data-i="${i}" data-d="1" aria-label="Molette ${i + 1} vers le haut">▲</button>
+          <div class="digit" id="pd-${i}">0</div>
+          <button class="down" data-i="${i}" data-d="-1" aria-label="Molette ${i + 1} vers le bas">▼</button>
+        </div>`).join('');
+      el.classList.add('show');
+      let done = false;
+      const turn = (i, d) => {
+        if (done) return;
+        digits[i] = (digits[i] + d + 10) % 10;
+        const dg = $(`pd-${i}`);
+        dg.textContent = digits[i];
+        dg.classList.remove('spin'); void dg.offsetWidth; dg.classList.add('spin');
+        sfx.click();
+        if (digits.join('') === code) {
+          done = true;
+          sfx.success();
+          el.classList.add('open');
+          setTimeout(() => finish(true), 900);
+        }
+      };
+      const onClick = (e) => {
+        const b = e.target.closest('button[data-i]');
+        if (b) turn(Number(b.dataset.i), Number(b.dataset.d));
+      };
+      const onWheel = (e) => {
+        const w = e.target.closest('.wheel');
+        if (!w) return;
+        e.preventDefault();
+        turn(Number(w.dataset.i), e.deltaY < 0 ? 1 : -1);
+      };
+      const onKey = (e) => { if (e.code === 'Escape') finish(false); };
+      const finish = (ok) => {
+        el.classList.remove('show', 'open');
+        wheels.removeEventListener('click', onClick);
+        wheels.removeEventListener('wheel', onWheel);
+        $('padlock-close').removeEventListener('click', onClose);
+        removeEventListener('keydown', onKey);
+        this.closeModal();
+        resolve(ok);
+      };
+      const onClose = () => finish(false);
+      wheels.addEventListener('click', onClick);
+      wheels.addEventListener('wheel', onWheel, { passive: false });
+      $('padlock-close').addEventListener('click', onClose);
+      addEventListener('keydown', onKey);
+    });
+  }
+
+  // Ordinateur portable : fenêtre bloquée sur le résultat manquant.
+  // check(value) -> 'ok' | 'wrong' ; onWrong() affiche la remarque du Dr. Leroy.
+  pc({ check, onWrong }) {
+    return new Promise((resolve) => {
+      this.openModal();
+      const el = $('pc');
+      const input = $('pc-input');
+      const popup = $('pc-popup');
+      const status = $('pc-status');
+      el.classList.add('show');
+      popup.hidden = true;
+      status.textContent = '';
+      status.className = '';
+      input.value = '';
+      input.disabled = false;
+      setTimeout(() => input.focus(), 50);
+      let busy = false;
+      const submit = async () => {
+        if (busy) return;
+        const v = input.value.toUpperCase().replace(/[^A-Z]/g, '');
+        if (!v) { showPopup(); return; }
+        if (check(v)) {
+          busy = true;
+          input.disabled = true;
+          sfx.success();
+          status.className = 'ok';
+          status.textContent = 'Compte rendu enregistré. Impression en cours…';
+          setTimeout(() => finish('ok'), 1400);
+        } else {
+          sfx.error();
+          busy = true;
+          await onWrong();
+          busy = false;
+          input.focus();
+          input.select();
+        }
+      };
+      const showPopup = () => { sfx.error(); popup.hidden = false; $('pc-popup-ok').focus(); };
+      const hidePopup = () => { popup.hidden = true; input.focus(); };
+      const onKey = (e) => {
+        if ($('dialog').classList.contains('show')) return;
+        if (e.code === 'Enter' || e.code === 'NumpadEnter') {
+          e.preventDefault();
+          if (!popup.hidden) hidePopup(); else submit();
+        } else if (e.code === 'Escape') {
+          if (!popup.hidden) hidePopup(); else finish('left');
+        }
+      };
+      const onSave = () => submit();
+      const onX = () => showPopup();
+      const onLeave = () => finish('left');
+      const finish = (r) => {
+        el.classList.remove('show');
+        $('pc-save').removeEventListener('click', onSave);
+        $('pc-x').removeEventListener('click', onX);
+        $('pc-popup-ok').removeEventListener('click', hidePopup);
+        $('pc-leave').removeEventListener('click', onLeave);
+        removeEventListener('keydown', onKey);
+        input.blur();
+        this.closeModal();
+        resolve(r);
+      };
+      $('pc-save').addEventListener('click', onSave);
+      $('pc-x').addEventListener('click', onX);
+      $('pc-popup-ok').addEventListener('click', hidePopup);
+      $('pc-leave').addEventListener('click', onLeave);
+      addEventListener('keydown', onKey);
+    });
+  }
+
+  // Vue dans l'oculaire du microscope
+  microscope(draw) {
+    return new Promise((resolve) => {
+      this.openModal();
+      const el = $('scope');
+      el.classList.add('show');
+      draw($('scope-canvas'));
+      const onKey = (e) => { if (e.code === 'Escape' || e.code === 'Enter') finish(); };
+      const finish = () => {
+        el.classList.remove('show');
+        $('scope-close').removeEventListener('click', finish);
+        removeEventListener('keydown', onKey);
+        this.closeModal();
+        resolve();
+      };
+      $('scope-close').addEventListener('click', finish);
+      addEventListener('keydown', onKey);
+    });
+  }
+
+  // Vue rapprochée d'un objet (tant que la touche est maintenue)
+  showItem(item) {
+    const el = $('viewer');
+    $('viewer-title').textContent = item.name;
+    $('viewer-body').innerHTML = item.view();
+    el.classList.add('show');
+  }
+
+  hideItem() {
+    $('viewer').classList.remove('show');
+  }
+
+  setHeld(item) {
+    const el = $('held');
+    if (!item) { el.classList.remove('show'); return; }
+    el.innerHTML = `<span class="ico">${item.icon}</span><span>En main : <b>${item.name}</b></span><span class="hint"><kbd>Clic droit</kbd> ranger</span>`;
+    el.classList.add('show');
+  }
+
+  setFrost(amount) {
+    $('frost').style.opacity = amount.toFixed(2);
+  }
+
+  updateObjectives(state, status) {
     const equipped = state.coat !== null && state.goggles && state.gloves;
-    $('obj-title').textContent = equipped ? 'Trouver les aimants' : 'S’équiper avant la manip';
+    $('obj-title').textContent = equipped ? 'Explorer le laboratoire' : 'S’équiper avant la manip';
     const set = (k, on) => $(`obj-${k}`).classList.toggle('done', on);
     set('coat', state.coat !== null);
     set('goggles', state.goggles);
     set('gloves', state.gloves);
-    $('obj-magnets').innerHTML = `<span class="magnet-icon"></span> Aimants <b>${state.magnets.size} / ${total}</b>`;
-    $('obj-magnets').classList.toggle('done', state.magnets.size >= total);
+    const st = $('obj-status');
+    st.textContent = status || '';
+    st.hidden = !status;
   }
 
-  updateInventory(items) {
+  updateInventory(items, selectedId = null) {
     const el = $('inventory');
     el.innerHTML = '';
     // seules les cases remplies sont affichées (la vue vers le bas reste dégagée)
-    for (const it of items) {
+    items.forEach((it, i) => {
       const slot = document.createElement('div');
-      slot.className = 'slot filled';
-      slot.innerHTML = `<span class="ico">${it.icon}</span><span class="name">${it.name}</span>`;
+      slot.className = 'slot filled' + (it.id === selectedId ? ' selected' : '');
+      slot.innerHTML = `<span class="num">${i + 1}</span><span class="ico">${it.icon}</span><span class="name">${it.name}</span>`;
       el.appendChild(slot);
-    }
+    });
   }
 
   fade(to, duration = 0.3) {

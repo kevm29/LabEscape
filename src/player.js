@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from '../lib/three/addons/RoundedBoxGeometry.js';
 import { ROOM } from './room.js';
+import { makeKey } from './props.js';
 import { tween, ease, wait } from './tween.js';
 
 const EYE = 1.65;
@@ -42,7 +43,7 @@ export class Player {
     this.lockedAt = 0;
     this.dragMode = false;
     addEventListener('mousemove', (e) => {
-      if (!this.enabled || this.frozen) return;
+      if (!this.enabled || this.frozen || (this.blocked && this.blocked())) return;
       if (this.dragMode && !(e.buttons & 1)) return; // mode secours : on regarde en glissant
       // Chrome envoie parfois un saut énorme juste après la capture du pointeur : on l'ignore
       if (performance.now() - this.lockedAt < 120) return;
@@ -65,7 +66,7 @@ export class Player {
   update(dt) {
     const k = this.keys;
     let fx = 0, fz = 0;
-    if (this.enabled && !this.frozen) {
+    if (this.enabled && !this.frozen && !(this.blocked && this.blocked())) {
       // event.code = position physique : KeyW = Z en AZERTY, KeyA = Q en AZERTY
       if (k.has('KeyW') || k.has('ArrowUp')) fz += 1;
       if (k.has('KeyS') || k.has('ArrowDown')) fz -= 1;
@@ -203,19 +204,24 @@ function buildBody() {
     p.position.set(Math.sin(theta) * r, y, TZ + Math.cos(theta) * r * 0.82);
     p.rotation.y = theta;
     coat.add(p);
-    mk(new THREE.BoxGeometry(0.15, 0.15, 0.012), coatShade, 0, 0, 0, p);
-    mk(new THREE.BoxGeometry(0.155, 0.012, 0.016), coatMat, 0, 0.075, 0.002, p);
+    // vraie poche : un rabat devant, des côtés et un fond, ouverte en haut
+    mk(new THREE.BoxGeometry(0.15, 0.15, 0.005), coatShade, 0, 0, 0.026, p);
+    mk(new THREE.BoxGeometry(0.155, 0.01, 0.008), coatMat, 0, 0.072, 0.027, p);
+    for (const sx of [-1, 1]) mk(new THREE.BoxGeometry(0.006, 0.15, 0.026), coatShade, sx * 0.073, 0, 0.013, p);
+    mk(new THREE.BoxGeometry(0.15, 0.006, 0.026), coatShade, 0, -0.073, 0.013, p);
     pockets.push(p);
   }
-  // l'aimant, glissé dans la poche droite (pockets[0] : côté x>0 = droite du joueur)
-  const magnet = buildMagnet();
-  magnet.position.set(0.0, 0.07, 0.022);
-  magnet.rotation.set(0.15, 0, 0.35);
-  magnet.visible = false;
-  pockets[0].add(magnet);
-  // le corps ne bloque pas le viseur (seul l'aimant est cliquable)
+  // la clé, glissée dans la poche droite (pockets[0] : côté x>0 = droite du joueur) :
+  // seul l'anneau dépasse de l'ouverture
+  const pocketKey = makeKey(0xc9a227);
+  pocketKey.scale.setScalar(1.9);
+  pocketKey.position.set(0.01, 0.03, 0.013);
+  pocketKey.rotation.set(0, 0.3, 0.18);
+  pocketKey.visible = false;
+  pockets[0].add(pocketKey);
+  // le corps ne bloque pas le viseur (seule la clé est cliquable)
   group.traverse((o) => { if (o.isMesh) o.userData.noRay = true; });
-  magnet.traverse((o) => { o.userData.noRay = false; });
+  pocketKey.traverse((o) => { o.userData.noRay = false; });
 
   function animateWalk(t, amount) {
     const a = Math.sin(t * 2) * 0.35 * amount;
@@ -223,25 +229,7 @@ function buildBody() {
     legs[1].rotation.x = -a;
   }
 
-  return { group, coat, magnet, animateWalk };
-}
-
-export function buildMagnet() {
-  const g = new THREE.Group();
-  const red = new THREE.MeshStandardMaterial({ color: 0xd32020, roughness: 0.35, metalness: 0.2 });
-  const tip = new THREE.MeshStandardMaterial({ color: 0xd0d4d8, roughness: 0.25, metalness: 0.9 });
-  const arc = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.011, 10, 20, Math.PI), red);
-  g.add(arc);
-  for (const s of [-1, 1]) {
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.03, 12), red);
-    leg.position.set(s * 0.03, -0.015, 0);
-    g.add(leg);
-    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.0115, 0.0115, 0.018, 12), tip);
-    t.position.set(s * 0.03, -0.039, 0);
-    g.add(t);
-  }
-  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-  return g;
+  return { group, coat, pocketKey, animateWalk };
 }
 
 // ---------- Mains (attachées à la caméra, pour les animations) ----------

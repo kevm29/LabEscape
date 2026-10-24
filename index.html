@@ -72,20 +72,93 @@
   #objectives h3 { margin: 0 0 10px; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); font-family: var(--mono); }
   #obj-title { font-weight: 600; margin-bottom: 10px; font-size: 15px; }
   #objectives ul { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; }
-  #objectives li, #obj-magnets { display: flex; align-items: center; gap: 9px; color: #cfd8de; }
+  #objectives li { display: flex; align-items: center; gap: 9px; color: #cfd8de; }
+  #obj-status { padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; line-height: 1.45; }
   #objectives li::before { content: ''; width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid rgba(255,255,255,0.35); flex: none; }
   #objectives li.done { color: var(--muted); text-decoration: line-through; }
   #objectives li.done::before { background: var(--ok); border-color: var(--ok); box-shadow: inset 0 0 0 3px #10251a; }
-  #obj-magnets { padding-top: 10px; border-top: 1px solid var(--line); }
-  #obj-magnets b { margin-left: auto; font-family: var(--mono); }
-  #obj-magnets.done b { color: var(--ok); }
   .magnet-icon { width: 15px; height: 15px; flex: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M8 4h5v13a3 3 0 0 0 6 0V4h5v13a8 8 0 0 1-16 0z' fill='%23e04444'/%3E%3Crect x='8' y='4' width='5' height='5' fill='%23d0d4d8'/%3E%3Crect x='19' y='4' width='5' height='5' fill='%23d0d4d8'/%3E%3C/svg%3E") center/contain no-repeat; }
 
   #inventory { left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; gap: 8px; }
   .slot { width: 58px; height: 58px; animation: pop .3s ease; border-radius: 12px; background: rgba(16,20,25,0.6); border: 1px solid var(--line); display: grid; place-items: center; position: relative; }
   .slot.filled { background: var(--panel); border-color: rgba(242,194,0,0.45); }
-  .slot .name { position: absolute; bottom: 3px; font-size: 10px; color: var(--muted); }
+  .slot .name { position: absolute; bottom: 3px; left: 3px; right: 3px; font-size: 9.5px; line-height: 1.1; color: var(--muted); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slot .ico svg { display: block; }
   .slot .ico { margin-top: -10px; }
+  .slot .num { position: absolute; top: 3px; left: 6px; font: 600 10px var(--mono); color: var(--muted); }
+  .slot.selected { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(242,194,0,0.35); }
+  #inventory .hint { align-self: center; font-size: 11px; color: var(--muted); margin-left: 6px; }
+
+  #held { left: 50%; bottom: 88px; transform: translateX(-50%); display: none; align-items: center; gap: 10px; padding: 6px 12px; border-radius: 10px; background: var(--panel); border: 1px solid rgba(242,194,0,0.45); font-size: 13px; }
+  #held.show { display: flex; }
+  #held .hint { color: var(--muted); font-size: 11px; }
+  #held .ico svg { width: 22px; height: 22px; display: block; }
+
+  #frost { position: fixed; inset: 0; pointer-events: none; z-index: 6; opacity: 0;
+    background: radial-gradient(ellipse at center, transparent 45%, rgba(210,235,255,0.35) 75%, rgba(235,248,255,0.75) 100%); }
+
+  /* vue rapprochée d'un objet */
+  #viewer { position: fixed; inset: 0; z-index: 25; display: none; place-items: center; pointer-events: none; background: rgba(4,6,9,0.45); }
+  #viewer.show { display: grid; }
+  #viewer .card { width: min(440px, calc(100vw - 32px)); padding: 20px 22px; border-radius: 18px; background: rgba(18,22,28,0.95); border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0,0,0,0.5); }
+  #viewer-title { font-weight: 700; margin-bottom: 12px; font-size: 15px; }
+  #viewer-body p { line-height: 1.55; color: #dfe6ea; margin: 10px 0 0; }
+  #viewer-body .obj { display: grid; place-items: center; padding: 6px 0; }
+  .paper { background: #fbfaf4; color: #1f2933; border-radius: 4px; padding: 18px 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); position: relative; font-size: 13px; line-height: 1.5; }
+  .paper p { color: #1f2933 !important; margin: 6px 0 !important; }
+  .paper .hand { font-family: 'Segoe Print', 'Comic Sans MS', cursive; color: #1e3a8a !important; }
+  .paper .big { font-size: 22px; text-align: center; margin-top: 22px !important; }
+  .paper .small { font-size: 12px; opacity: 0.75; }
+  .paper header { border-bottom: 2px solid #1e5bb8; padding-bottom: 6px; font-size: 12px; }
+  .paper .meta { font-size: 11px; color: #5a6670; margin: 6px 0; }
+  .paper h4 { margin: 10px 0 6px; font-size: 15px; }
+  .paper table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  .paper td { border-bottom: 1px solid #e3e1d8; padding: 4px 2px; }
+  .paper td:first-child { color: #5a6670; width: 40%; }
+  .paper footer { margin-top: 14px; font-size: 12px; text-align: right; }
+  .paper.crumpled { background: #f1eee3; transform: rotate(-1.5deg); background-image: linear-gradient(115deg, transparent 40%, rgba(0,0,0,0.04) 41%, transparent 43%), linear-gradient(30deg, transparent 60%, rgba(0,0,0,0.05) 61%, transparent 63%); }
+  .paper.note { min-height: 180px; }
+  .paper .tape { position: absolute; top: 18px; left: 22%; width: 60px; height: 20px; background: rgba(240,230,170,0.85); transform: rotate(-4deg); }
+  .paper .tape.r { left: auto; right: 22%; transform: rotate(5deg); }
+
+  /* ordinateur portable */
+  #pc .screen-frame { width: min(620px, calc(100vw - 32px)); border-radius: 16px; padding: 14px; background: #2b2f34; border: 1px solid #444b52; box-shadow: 0 30px 80px rgba(0,0,0,0.55); animation: pop .22s ease; }
+  #pc .desktop { position: relative; border-radius: 6px; padding: 26px 20px; background: linear-gradient(135deg, #1d4f7a, #173a5c); min-height: 300px; }
+  #pc .window { background: #f4f6f8; color: #1a2530; border-radius: 6px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+  #pc .titlebar { display: flex; align-items: center; justify-content: space-between; background: #2b3a4f; color: #fff; padding: 7px 10px; font-size: 13px; font-weight: 600; }
+  #pc-x { background: #c62828; color: #fff; border: 0; width: 22px; height: 22px; border-radius: 4px; cursor: pointer; font-weight: 700; }
+  #pc .wbody { padding: 16px 18px; display: grid; gap: 10px; font-size: 14px; }
+  #pc .row { display: flex; gap: 8px; color: #5a6670; }
+  #pc .row b { color: #1a2530; }
+  #pc label { font-weight: 600; }
+  #pc-input { font: 600 20px var(--mono); letter-spacing: 0.15em; padding: 8px 10px; border-radius: 6px; border: 2px solid #c62828; text-transform: uppercase; width: 100%; color: #1a2530; background: #fff; }
+  #pc-input:focus { outline: 3px solid rgba(63,130,230,0.4); }
+  #pc-save { justify-self: start; padding: 9px 14px; border-radius: 6px; border: 0; background: #1e5bb8; color: #fff; font: 600 14px var(--font); cursor: pointer; }
+  #pc-status.ok { color: #166534; font-weight: 600; }
+  #pc-popup { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,0.35); }
+  #pc-popup[hidden] { display: none; }
+  #pc-popup .box { width: 300px; background: #fff; color: #1a2530; border-radius: 8px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); font-size: 14px; line-height: 1.5; }
+  #pc-popup .box b { color: #c62828; }
+  #pc-popup-ok { margin-top: 12px; padding: 7px 16px; border: 0; border-radius: 6px; background: #1e5bb8; color: #fff; cursor: pointer; font: 600 13px var(--font); }
+  #pc-leave { display: block; margin: 14px auto 0; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: 500 14px var(--font); cursor: pointer; }
+
+  /* cadenas à molettes */
+  #padlock .card { width: 330px; text-align: center; }
+  #padlock-wheels { display: flex; justify-content: center; gap: 10px; padding: 18px 16px; border-radius: 14px; background: linear-gradient(#2a4f9e, #1d3a78); margin: 6px 0 4px; }
+  .wheel { display: grid; gap: 4px; }
+  .wheel button { border: 0; background: rgba(255,255,255,0.12); color: #fff; border-radius: 6px; padding: 4px 0; cursor: pointer; font-size: 12px; }
+  .wheel button:hover { background: rgba(255,255,255,0.25); }
+  .wheel .digit { width: 46px; height: 58px; display: grid; place-items: center; border-radius: 8px; background: linear-gradient(#d9dde2, #fff 45%, #fff 55%, #c9ced4); color: #111; font: 700 30px var(--mono); box-shadow: inset 0 2px 6px rgba(0,0,0,0.35); }
+  .wheel .digit.spin { animation: spin .15s ease; }
+  @keyframes spin { from { transform: translateY(-6px); opacity: .5; } }
+  #padlock.open #padlock-wheels { background: linear-gradient(#1f8a4c, #166534); }
+  #padlock .help { font-size: 12px; color: var(--muted); }
+
+  /* microscope */
+  #scope { background: rgba(0,0,0,0.92); }
+  #scope .wrap { display: grid; place-items: center; gap: 14px; }
+  #scope-canvas { width: min(78vmin, 640px); height: min(78vmin, 640px); border-radius: 50%; box-shadow: 0 0 0 10px #050505, 0 0 60px rgba(0,0,0,0.9) inset; }
+  #scope-close { padding: 9px 18px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: 500 14px var(--font); cursor: pointer; }
 
   .toast {
     position: fixed; z-index: 20; left: 50%; top: 22px; transform: translate(-50%, -12px); max-width: min(640px, calc(100vw - 32px));
@@ -103,6 +176,13 @@
 
   /* ---------- fenêtres ---------- */
   .modal { position: fixed; inset: 0; z-index: 30; display: none; place-items: center; background: rgba(4,6,9,0.5); }
+  .modal.show { overflow-y: auto; padding: 12px 0; }
+  @media (max-height: 560px) {
+    #keypad-keys button { padding: 8px 0; font-size: 17px; }
+    .screen { padding: 8px; font-size: 22px; margin-bottom: 8px; }
+    .modal .card { padding: 16px 18px; }
+    #pc .desktop { min-height: 0; padding: 14px; }
+  }
   .modal.show { display: grid; }
   .modal .card { width: min(520px, calc(100vw - 32px)); padding: 24px 26px; border-radius: 18px; background: rgba(18,22,28,0.94); border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0,0,0,0.5); animation: pop .22s ease; }
   @keyframes pop { from { transform: scale(0.95); opacity: 0; } }
@@ -115,12 +195,14 @@
   #dialog-text { line-height: 1.6; color: #dfe6ea; }
   #dialog-text .warn-count { margin-top: 14px; font-family: var(--mono); font-size: 12px; color: #fca5a5; }
   #dialog-text .rules { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+  #dialog { z-index: 35; }
+  #dialog-text .learn { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: rgba(63,130,230,0.12); border: 1px solid rgba(63,130,230,0.3); font-size: 14px; }
   .modal .card button.primary { margin-top: 20px; }
   .modal.danger button.primary { background: var(--danger); color: #fff; }
 
   #keypad .card { width: 300px; }
   #keypad-title { font-weight: 700; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-  #keypad-close { background: none; border: 0; color: var(--muted); font-size: 22px; cursor: pointer; line-height: 1; }
+  #keypad-close, .x-btn { background: none; border: 0; color: var(--muted); font-size: 22px; cursor: pointer; line-height: 1; }
   .screen { font-family: var(--mono); font-size: 28px; letter-spacing: 0.1em; text-align: center; padding: 14px; border-radius: 10px; background: #08140d; color: #4ade80; border: 1px solid #1f3a2a; margin-bottom: 14px; text-shadow: 0 0 10px rgba(74,222,128,0.5); }
   .screen.err { color: #f87171; text-shadow: 0 0 10px rgba(248,113,113,0.6); animation: shake .3s; }
   @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
@@ -180,7 +262,7 @@
     <li id="obj-goggles">Lunettes de protection</li>
     <li id="obj-gloves">Gants en nitrile</li>
   </ul>
-  <div id="obj-magnets"></div>
+  <div id="obj-status" hidden></div>
 </div>
 
 <div id="inventory" class="hud"></div>
@@ -189,7 +271,7 @@
 <div id="dialog" class="modal">
   <div class="card">
     <div class="who">
-      <div class="avatar">DL</div>
+      <div class="avatar" id="dialog-avatar">DL</div>
       <div><div id="dialog-speaker"></div><div id="dialog-role"></div></div>
     </div>
     <div id="dialog-text"></div>
@@ -213,6 +295,53 @@
   </div>
 </div>
 
+<div id="frost"></div>
+<div id="held" class="hud"></div>
+
+<div id="viewer"><div class="card"><div id="viewer-title"></div><div id="viewer-body"></div></div></div>
+
+<div id="pc" class="modal">
+  <div>
+    <div class="screen-frame">
+      <div class="desktop">
+        <div class="window">
+          <div class="titlebar"><span>LabNote — Compte rendu d’analyse</span><button id="pc-x" aria-label="Fermer la fenêtre">×</button></div>
+          <div class="wbody">
+            <div class="row">Échantillon : <b>T-07</b> · Analyse : <b>séquençage (gel 4 pistes)</b></div>
+            <div class="row">Opérateur : <b>T. Attot</b> · Validation : <b>Dr. P. Hemick</b></div>
+            <label for="pc-input">Résultat du gel d’électrophorèse :</label>
+            <input id="pc-input" type="text" maxlength="12" autocomplete="off" spellcheck="false" placeholder="……">
+            <button id="pc-save">Enregistrer et imprimer</button>
+            <div id="pc-status" role="status"></div>
+          </div>
+        </div>
+        <div id="pc-popup" hidden>
+          <div class="box"><b>⚠ Résultat manquant</b><br>Merci de renseigner le résultat du gel d’électrophorèse avant de fermer ce compte rendu.<br><button id="pc-popup-ok">OK</button></div>
+        </div>
+      </div>
+    </div>
+    <button id="pc-leave">Se lever du bureau</button>
+  </div>
+</div>
+
+<div id="padlock" class="modal">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <strong id="padlock-title">Cadenas</strong>
+      <button id="padlock-close" class="x-btn" aria-label="Fermer">×</button>
+    </div>
+    <div id="padlock-wheels"></div>
+    <div class="help">Cliquez sur ▲ ▼ ou tournez la molette de la souris sur un chiffre.</div>
+  </div>
+</div>
+
+<div id="scope" class="modal">
+  <div class="wrap">
+    <canvas id="scope-canvas" width="720" height="720"></canvas>
+    <button id="scope-close">Relever la tête</button>
+  </div>
+</div>
+
 <div id="pause"><div>Cliquer pour reprendre</div></div>
 
 <div id="win" class="modal">
@@ -233,6 +362,8 @@
       <div class="keys"><kbd>Souris</kbd></div><div>Regarder autour</div>
       <div class="keys"><kbd>Molette</kbd></div><div>Zoomer</div>
       <div class="keys"><kbd>Clic</kbd> / <kbd>E</kbd></div><div>Interagir, fouiller, prendre</div>
+      <div class="keys"><kbd>1</kbd>…<kbd>6</kbd> maintenu</div><div>Regarder un objet (il passe en main)</div>
+      <div class="keys"><kbd>Clic droit</kbd></div><div>Ranger l’objet en main</div>
       <div class="keys"><kbd>Échap</kbd></div><div>Pause</div>
     </div>
     <button id="start-btn" class="primary">Entrer dans le labo</button>

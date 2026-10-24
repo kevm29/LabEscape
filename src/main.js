@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from '../lib/three/addons/RoomEnvironment.js';
 import { buildRoom, updateClock } from './room.js';
+import { buildProps } from './props.js';
+import { createLighting } from './lighting.js';
 import { Player } from './player.js';
 import { Game } from './game.js';
 import { UI } from './ui.js';
@@ -24,28 +26,10 @@ scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture
 
 const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.03, 60);
 
-// ---------- lumières ----------
-scene.add(new THREE.HemisphereLight(0xf2f6ff, 0x6a7076, 0.3));
-const key = new THREE.DirectionalLight(0xfff4e6, 1.7);
-key.position.set(1.2, 7, 1.8);
-key.target.position.set(0, 0, -0.3);
-key.castShadow = true;
-key.shadow.mapSize.set(2048, 2048);
-Object.assign(key.shadow.camera, { left: -6, right: 6, top: 5, bottom: -5, near: 1, far: 14 });
-key.shadow.bias = -0.0004;
-key.shadow.normalBias = 0.03;
-key.shadow.radius = 3;
-scene.add(key, key.target);
-for (const x of [-3, 0, 3]) {
-  for (const z of [-2, 1.6]) {
-    const l = new THREE.PointLight(0xfff3e2, 2.4, 7, 1.6);
-    l.position.set(x, 2.8, z);
-    scene.add(l);
-  }
-}
-
 // ---------- monde ----------
+const lighting = createLighting(scene);
 const { colliders, refs } = buildRoom(scene);
+buildProps(scene, refs, colliders);
 // l'environnement (reflets) est volontairement atténué pour garder du contraste
 scene.traverse((o) => {
   if (!o.isMesh) return;
@@ -53,7 +37,8 @@ scene.traverse((o) => {
 });
 const ui = new UI();
 const player = new Player(camera, scene, colliders);
-const game = new Game({ scene, camera, player, refs, ui });
+const game = new Game({ scene, camera, player, refs, ui, lighting });
+player.blocked = () => ui.modalOpen;
 
 // ---------- capture de la souris ----------
 const canvas = renderer.domElement;
@@ -108,9 +93,14 @@ document.addEventListener('pointerlockerror', () => {
 
 canvas.addEventListener('mousedown', (e) => {
   if (!started || ui.modalOpen) return;
-  if (player.dragMode) { downAt = [e.clientX, e.clientY]; return; }
+  if (player.dragMode) {
+    if (e.button === 2) { game.deselect(); return; }
+    downAt = [e.clientX, e.clientY];
+    return;
+  }
   if (document.pointerLockElement !== canvas) { lock(); return; }
   if (e.button === 0) game.interact();
+  else if (e.button === 2) game.deselect();
 });
 canvas.addEventListener('mouseup', (e) => {
   if (!player.dragMode || !downAt || ui.modalOpen) return;
@@ -118,8 +108,21 @@ canvas.addEventListener('mouseup', (e) => {
   downAt = null;
 });
 addEventListener('keydown', (e) => {
-  if (e.code === 'KeyE' && player.enabled && !ui.modalOpen) game.interact();
+  if (!started || ui.modalOpen) return;
+  if (e.code === 'KeyE' && player.enabled) game.interact();
+  // inventaire : maintenir 1-6 pour regarder un objet (il passe en main)
+  const m = /^(?:Digit|Numpad)([1-6])$/.exec(e.code);
+  if (m && !e.repeat) {
+    if (game.viewItem(Number(m[1]) - 1)) viewing = e.code;
+  }
 });
+let viewing = null;
+addEventListener('keyup', (e) => {
+  if (viewing && e.code === viewing) { game.stopViewing(); viewing = null; }
+});
+addEventListener('blur', () => { if (viewing) { game.stopViewing(); viewing = null; } });
+// clic droit : ranger l'objet en main
+addEventListener('contextmenu', (e) => { if (started) e.preventDefault(); });
 
 document.addEventListener('pointerlockchange', () => {
   const locked = document.pointerLockElement === canvas;
@@ -148,7 +151,8 @@ addEventListener('resize', () => {
 // ---------- boucle ----------
 const clock = new THREE.Clock();
 // ?test : pas de temps fixe (pour les captures automatiques sur machine lente)
-const FIXED_DT = new URLSearchParams(location.search).has('test') ? 1 / 30 : 0;
+const testParam = new URLSearchParams(location.search).get('test');
+const FIXED_DT = testParam === null ? 0 : Number(testParam) || 1 / 30;
 let frame = 0;
 renderer.setAnimationLoop(() => {
   const dt = FIXED_DT || Math.min(clock.getDelta(), 0.05);
@@ -161,4 +165,4 @@ renderer.setAnimationLoop(() => {
 });
 
 // accès console pour déboguer / tester
-window.lab = { scene, camera, player, game, ui, refs, renderer, get frame() { return frame; } };
+window.lab = { scene, camera, player, game, ui, refs, renderer, lighting, get frame() { return frame; } };

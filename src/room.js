@@ -6,7 +6,10 @@ import { RoundedBoxGeometry } from '../lib/three/addons/RoundedBoxGeometry.js';
 import * as T from './textures.js';
 
 export const ROOM = { minX: -5, maxX: 5, minZ: -4, maxZ: 4, height: 3 };
-export const PPE_LINE_Z = 0.6; // ligne jaune/noire : au nord, zone de manip
+// Ligne jaune/noire en L : zone de manip = au nord de PPE_LINE_Z, ou à l'est de PPE_LINE_X
+export const PPE_LINE_Z = 0.6;
+export const PPE_LINE_X = 1.6;
+export const inManipZone = (x, z) => z < PPE_LINE_Z || x > PPE_LINE_X;
 
 const mats = {};
 function initMaterials() {
@@ -18,6 +21,7 @@ function initMaterials() {
     floor: std({ map: T.floorTexture(), roughness: 0.42, metalness: 0.0 }),
     ceiling: std({ map: T.ceilingTexture(), roughness: 0.95 }),
     lightPanel: std({ color: 0xffffff, emissive: 0xfff8ee, emissiveIntensity: 2.2 }),
+    ceilingPanel: std({ color: 0xffffff, emissive: 0xfff8ee, emissiveIntensity: 2.2 }),
     laminate: std({ color: 0xe6eaec, roughness: 0.5 }),
     laminateGrey: std({ color: 0xc3cbd0, roughness: 0.55 }),
     epoxy: std({ color: 0x1f2328, roughness: 0.28 }),
@@ -313,6 +317,7 @@ function makeHood(scene, cx, { withBin = false, props = () => {} } = {}) {
   cyl(g, 0.012, 0.012, 0.5, mats.steel, 0, sashBottom - 0.03, front - 0.01, { rz: Math.PI / 2 }, 10);
   // lumière intérieure
   const l = new THREE.PointLight(0xfff4e0, 1.2, 2.2, 1.5);
+  l.userData.switchable = true;
   l.position.set(0, 1.85, -0.1);
   g.add(l);
 
@@ -352,7 +357,7 @@ export function buildRoom(scene) {
   const panelPos = [];
   for (const x of [-3, 0, 3]) for (const z of [-2, 1.6]) panelPos.push([x, z]);
   for (const [x, z] of panelPos) {
-    box(scene, 1.2, 0.03, 0.6, mats.lightPanel, x, H - 0.015, z, { cast: false, receive: false });
+    box(scene, 1.2, 0.03, 0.6, mats.ceilingPanel, x, H - 0.015, z, { cast: false, receive: false });
     box(scene, 1.24, 0.02, 0.64, mats.laminateGrey, x, H - 0.008, z, { cast: false, receive: false });
   }
 
@@ -361,8 +366,8 @@ export function buildRoom(scene) {
   const rackZ = [2.25, 2.7, 3.15];
   box(scene, 0.03, 0.12, 1.4, mats.wood, minX + 0.015, 1.9, 2.7);
   const coatDefs = [
-    { name: 'Dr C. Martin', role: 'Chercheuse' },
-    { name: 'K. Le Gall', role: 'Doctorant' },
+    { name: 'Dr. P. Hemick', role: 'Chercheur' },
+    { name: 'T. Attot', role: 'Doctorant' },
     { name: 'Visiteur', role: 'Blouse de prêt' },
   ];
   refs.coats = rackZ.map((z, i) => {
@@ -428,7 +433,11 @@ export function buildRoom(scene) {
   plane(scene, 0.8, 0.4, labelMat(T.ppeSignTexture()), minX + 0.006, 2.1, 1.25, { ry: Math.PI / 2 });
 
   // ligne de sécurité au sol
-  plane(scene, W, 0.1, new THREE.MeshStandardMaterial({ map: T.floorLineTexture(), roughness: 0.5 }), 0, 0.003, PPE_LINE_Z, { rx: -Math.PI / 2 });
+  const lineMat = new THREE.MeshStandardMaterial({ map: T.floorLineTexture(), roughness: 0.5 });
+  const segA = PPE_LINE_X + 0.05 - minX; // du mur ouest jusqu'au coude
+  plane(scene, segA, 0.1, lineMat, minX + segA / 2, 0.003, PPE_LINE_Z, { rx: -Math.PI / 2 });
+  const segB = maxZ - PPE_LINE_Z - 0.05; // du coude jusqu'au mur sud
+  plane(scene, segB, 0.1, lineMat, PPE_LINE_X, 0.0032, PPE_LINE_Z + 0.05 + segB / 2, { rx: -Math.PI / 2, rz: Math.PI / 2 });
   plane(scene, 2.2, 0.34, new THREE.MeshStandardMaterial({ map: T.floorTextTexture(), transparent: true, roughness: 0.6, depthWrite: false }), -2.0, 0.004, PPE_LINE_Z + 0.32, { rx: -Math.PI / 2 });
 
   // ===== PORTE D'ENTRÉE (mur sud) =====
@@ -498,14 +507,6 @@ export function buildRoom(scene) {
   bottle(ne, 0.98, 0.92, 0.0, { liquid: 0xffd27a, cap: mats.redCap });
   addCol(1.0, 3.5, -4, -3.2);
 
-  // congélateur -80 °C (coin nord-est)
-  const fz = new THREE.Group();
-  fz.position.set(4.3, 0, -3.6);
-  scene.add(fz);
-  rbox(fz, 0.9, 1.95, 0.75, 0.03, new THREE.MeshStandardMaterial({ color: 0xf2f4f5, roughness: 0.4 }), 0, 0.975, 0);
-  box(fz, 0.04, 0.6, 0.04, mats.darkSteel, 0.36, 1.1, 0.39);
-  plane(fz, 0.22, 0.08, new THREE.MeshStandardMaterial({ color: 0x0c1a12, emissive: 0x6ad1ff, emissiveIntensity: 0.6, emissiveMap: T.textPlaneTexture('-80 °C', { bg: '#000', fg: '#7fdcff', size: 72 }) }), -0.1, 1.7, 0.376);
-  addCol(3.8, 5, -4, -3.2);
 
   // ===== PAILLASSE CENTRALE =====
   const cb = new THREE.Group();
@@ -535,12 +536,10 @@ export function buildRoom(scene) {
     });
   }
   // matériel sur le plan
-  microscope(cb, -1.3, 0.92, 0.25, Math.PI);
+  refs.microscope = microscope(cb, -1.3, 0.92, 0.25, Math.PI);
   tubeRack(cb, -0.5, 0.92, 0.3);
   erlenmeyer(cb, 0.2, 0.92, 0.32, 0xffb070);
   beaker(cb, 0.45, 0.92, 0.28, 0x7ee0b0);
-  rbox(cb, 0.3, 0.12, 0.3, 0.02, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 }), 1.2, 0.98, 0.25);
-  cyl(cb, 0.1, 0.1, 0.005, mats.darkSteel, 1.2, 1.043, 0.25);
   // côté nord
   tubeRack(cb, 0.9, 0.92, -0.32, Math.PI);
   bottle(cb, -0.2, 0.92, -0.3, { liquid: 0xffffff, fill: 0.8, h: 0.25, r: 0.05 });
@@ -590,35 +589,9 @@ export function buildRoom(scene) {
   refs.keypad = kp;
   refs.keypadLed = led;
 
-  // évier
-  const sk = new THREE.Group();
-  sk.position.set(maxX - 0.33, 0, 1.4);
-  scene.add(sk);
-  box(sk, 0.62, 0.86, 1.2, mats.laminate, 0, 0.47, 0);
-  box(sk, 0.66, 0.04, 1.24, mats.steel, 0, 0.9, 0);
-  box(sk, 0.42, 0.02, 0.5, mats.darkSteel, -0.02, 0.905, 0);
-  box(sk, 0.06, 0.25, 1.24, mats.laminateGrey, 0.3, 1.04, 0);
-  // col de cygne : demi-tore dans le plan XY, du mur vers le bac
-  add(sk, new THREE.TorusGeometry(0.12, 0.012, 8, 24, Math.PI), mats.steel, 0.12, 1.06, 0);
-  cyl(sk, 0.012, 0.012, 0.16, mats.steel, 0.24, 0.98, 0);
-  cyl(sk, 0.016, 0.014, 0.04, mats.steel, 0.0, 1.04, 0);
-  // distributeur de savon
-  rbox(sk, 0.08, 0.2, 0.1, 0.01, mats.white, 0.29, 1.3, -0.35);
-  refs.sink = sk;
-  addCol(maxX - 0.66, maxX, 0.78, 2.02);
-
-  // frigo
-  const fr = new THREE.Group();
-  fr.position.set(maxX - 0.35, 0, 3.0);
-  scene.add(fr);
-  rbox(fr, 0.66, 1.75, 0.7, 0.03, new THREE.MeshStandardMaterial({ color: 0xf4f6f7, roughness: 0.35 }), 0, 0.875, 0);
-  box(fr, 0.03, 0.5, 0.04, mats.darkSteel, -0.34, 1.15, -0.25);
-  plane(fr, 0.24, 0.12, labelMat(T.fridgeLabelTexture()), -0.336, 1.5, 0.05, { ry: -Math.PI / 2 });
-  refs.fridge = fr;
-  addCol(maxX - 0.7, maxX, 2.62, 3.38);
 
   // ===== MUR SUD : affiche + horloge =====
-  const poster = plane(scene, 0.6, 0.84, labelMat(T.posterTexture()), 0.4, 1.55, maxZ - 0.006, { ry: Math.PI });
+  const poster = plane(scene, 0.6, 0.84, labelMat(T.posterTexture()), 0.3, 1.75, maxZ - 0.006, { ry: Math.PI });
   refs.poster = poster;
   const clock = new THREE.Group();
   clock.position.set(2.6, 2.35, maxZ - 0.03);

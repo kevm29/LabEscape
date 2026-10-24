@@ -1,6 +1,6 @@
 # Scénario — Lab Escape
 
-Trame définie par Kevin (24/10/2026). Pas encore implémentée.
+Trame définie par Kevin (24/10/2026). **Énigmes 1 à 5 implémentées** (version de test). Codes dans `src/config.js`.
 
 ## Énigme 1 — S'équiper
 - Mettre les 3 EPI : blouse, lunettes, gants.
@@ -36,14 +36,26 @@ Trame définie par Kevin (24/10/2026). Pas encore implémentée.
 ## Énigme 5 — Le bloc de glace
 - Faire **fondre la glace sous l'eau du robinet** (évier) → on y trouve une **clé**.
 
-## Points à trancher
-- **Frigo ou congélateur ?** Le papier de l'énigme 3 parle du « code du congélateur 1 », mais l'énigme 4 utilise 7764 pour le **frigo 1**. À harmoniser.
-- **Lecture du gel** : préciser l'indice qui donne le **sens de lecture** (ex. gel de séquençage à 4 pistes A/C/G/T, lu du bas vers le haut, des petits fragments vers les grands).
-- **Cellules rosées / mauves** : quel colorant et quelle signification (cellules vivantes / mortes) ? Utile pour l'explication pédagogique.
-- **Clé de l'énigme 5** : qu'ouvre-t-elle ?
-- **3 aimants** : toujours dans le jeu ? Si oui, où et à quoi servent-ils ?
-- Rôle du **tiroir sans étiquette** (ouvert) et du **brouillon** dans la poubelle à papier.
+## Décisions (24/10/2026)
+- Le code 7764 ouvre le **frigo +4 °C** (le papier de Tom dit « Pile le code du frigo ! »). Seul le dernier réactif va au **-80 °C**.
+- Gel : 4 pistes étiquetées **A C G T**, puits (−) en haut, (+) en bas, « migration ↓ ». Lecture du bas vers le haut. Les bandes ne sont bien visibles qu'UV allumés **et** lumière éteinte.
+- Cellules : **coloration de viabilité**. Rosées = vivantes (comptées), mauve foncé = mortes. Comptage 7 / 7 / 6 / 4 (+ 3 / 4 / 2 / 5 mortes) → 63 % de viabilité, expliqué par le Dr. Leroy.
+- Pas d'aimants.
+- Tous les codes se tournent / se cliquent à la souris, sauf TTGACG qui se tape sur le PC.
+- Ligne au sol en L : le bureau et le vestiaire sont hors zone ; l'évier, le frigo, la poubelle à gants et la sortie sont en zone de manip.
+- Objet utilisé au mauvais endroit : 4 messages qui tournent en boucle (« Mais que ferais-je avec ça ? »…).
 
-## Éléments à construire pour ce scénario
+## Ajouts faits pour relier les énigmes (à valider)
+- **Tiroir de Paul** : contient son carnet de labo, qui rappelle que Tom doit finir le compte rendu et que le gel est resté sur le transilluminateur.
+- **Brouillon de la corbeille** : note de Tom sur le sens de lecture du gel (indice facultatif).
+- **Tiroir du bas** (sans étiquette) : s'ouvre, ne contient rien d'utile.
+- **Poubelle à gants** (mur est) : on y retire et jette ses gants ; la porte de sortie refuse qu'on la touche avec des gants.
+- Fin de la version de test : un message s'affiche quand on obtient la petite clé.
+
+## Points encore ouverts
+- **Clé de l'énigme 5** : qu'ouvre-t-elle ?
+- Énigme finale et **code de la porte de sortie**.
+
+## Éléments construits pour ce scénario
 Bureau (PC portable, tiroirs Paul / Tom / libre, poubelle à papier), imprimante, interrupteur + pénombre, transilluminateur UV avec vitre, gel, microscope utilisable, cadenas 4 chiffres, clavier du frigo, frigo ouvrable, congélateur -80 °C ouvrable, évier avec eau, inventaire à touches 1–6 avec vue rapprochée.
 Voir aussi `BACKLOG.md`.
