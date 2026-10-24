@@ -21,14 +21,16 @@ Ou activer **GitHub Pages** sur la branche `main` (Settings → Pages → Deploy
 | Regarder | Souris |
 | Zoomer | Molette |
 | Interagir / fouiller / prendre | Clic gauche ou `E` |
-| Regarder un objet de l'inventaire | Maintenir `1` à `6` (l'objet passe en main) |
+| S'accroupir | Maintenir `Ctrl` |
+| Regarder un objet de l'inventaire | Maintenir `1` à `0` (l'objet passe en main) |
 | Utiliser l'objet en main | Clic gauche sur la cible |
+| Poser l'objet en main | Clic gauche sur le sol, un meuble, un tiroir ouvert |
 | Ranger l'objet en main | Clic droit |
 | Pause | `Échap` |
 
 ## Contenu
 
-Le scénario (énigmes 1 à 5) est décrit dans [`SCENARIO.md`](SCENARIO.md), les retours à intégrer dans [`BACKLOG.md`](BACKLOG.md). Les codes sont dans `src/config.js`.
+Le scénario complet est décrit dans [`SCENARIO.md`](SCENARIO.md), les retours à intégrer dans [`BACKLOG.md`](BACKLOG.md). Les codes sont dans `src/config.js`.
 
 ## Organisation du code
 
@@ -38,8 +40,10 @@ src/main.js         rendu, lumières, boucle, capture de la souris
 src/room.js         construction de la salle (murs, vestiaire, hottes, paillasses)
 src/props.js        mobilier des énigmes (bureau, PC, imprimante, transilluminateur,
                     frigo, -80 °C, évier, interrupteur, poubelle à gants)
+src/machines.js     séquenceur, robot de pipetage, incubateur, armoire de sécurité
 src/lighting.js     éclairage et mode pénombre
 src/items.js        objets d'inventaire (icônes, vues rapprochées)
+src/items3d.js      modèles 3D des objets posés
 src/player.js       déplacements, collisions, corps visible, mains animées
 src/game.js         état de partie, interactions, inventaire, énigmes
 src/ui.js           toasts, dialogues, digicode, cadenas, PC, microscope, inventaire
@@ -62,4 +66,4 @@ this.register(refs.monObjet, {
 });
 ```
 
-Pour tester sur une machine lente, ajouter `?test` à l'adresse (pas de temps fixe). En console, `window.lab` donne accès à la scène, au joueur et à l'état de la partie pour déboguer.
+Pour tester sur une machine lente, ajouter `?test` à l'adresse (pas de temps fixe, `?test=0.2` pour accélérer). En console, `window.lab` donne accès à la scène, au joueur et à l'état de la partie pour déboguer.

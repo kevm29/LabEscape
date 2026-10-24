@@ -1,61 +1,42 @@
 # Scénario — Lab Escape
 
-Trame définie par Kevin (24/10/2026). **Énigmes 1 à 5 implémentées** (version de test). Codes dans `src/config.js`.
+Trame définie par Kevin (24/10/2026). **Partie complète jouable**, de l'entrée à la sortie. Codes et réglages dans `src/config.js`.
 
-## Énigme 1 — S'équiper
-- Mettre les 3 EPI : blouse, lunettes, gants.
-- Si on met la blouse du **Dr. P. Hemick**, on trouve dans sa poche la **clé de son tiroir** (bureau, tiroir annoté « Paul »).
+## Histoire
+Tom, le doctorant, est tombé malade avant d'avoir fini ses manips. Le joueur est le stagiaire du moment : le Dr. Leroy (responsable sécurité, par l'interphone) lui a ouvert le labo pour finaliser les analyses de Tom avant le week-end. D'après Tom, « tout est accessible, d'une façon ou d'une autre ».
 
-## Énigme 2 — Le PC et le gel sous UV
-- Appuyer sur le bouton d'allumage du PC portable (sur le bureau).
-- Le PC s'allume, bloqué sur un **résultat d'analyse manquant** : « le résultat du gel d'électrophorèse est … », sans réponse.
-- Tenter de fermer la fenêtre → pop-up « Résultat manquant, merci de renseigner … ».
-- Solution : **éteindre la lumière** (interrupteur), aller au **transilluminateur**, **allumer les UV**, lire le résultat **à travers la vitre** : migration dans le sens **TTGACG**.
-- Saisir TTGACG sur le PC :
-  - **bon code** → on peut enregistrer le compte rendu et l'**imprimer** ;
-  - **mauvais code** → le Dr. Leroy demande si on est sûr et où on a trouvé ce code.
-- Le compte rendu s'imprime (imprimante à côté). En-tête : Laboratoire …, date et lieu, le compte rendu, signé **T. ATTOT**, tom.attot@….fr, **Poste 51.23**.
+## Chaîne d'énigmes
+1. **S'équiper** : blouse, lunettes, gants (gants en dernier). La blouse du **Dr. P. Hemick** a une **clé dorée** dans la poche (visible en baissant la tête).
+2. **Tiroir « Paul »** (clé dorée) → **carnet de Paul** avec un post-it : mot de passe du PC **LB_026**.
+3. **PC portable** : allumage → session verrouillée → **LB_026** → compte rendu bloqué sur « résultat manquant » (pop-up si on veut fermer).
+4. **Gel** : éteindre la lumière (interrupteur près de l'entrée) + allumer les UV du transilluminateur. Les bandes sont **invisibles sans UV**. Lecture du bas (+) vers le haut (−) : **TTGACG**. Mauvais code → « Vous êtes sûr ? Où avez-vous trouvé ce code ? ».
+5. **Compte rendu imprimé** au bureau : signé T. ATTOT, **Poste 51.23**.
+6. **Tiroir « Tom »** : cadenas à molettes **5123** → **note de Tom** avec une lame scotchée. On regarde la note (touche maintenue) et un **clic décroche la lame**.
+7. **Microscope** : cellule de Malassez, coloration de viabilité. Cellules rosées (vivantes) par quart, de gauche à droite et de haut en bas : **7 7 6 4**.
+8. **Frigo +4 °C** (clavier) **7764** → réactifs, dont l'**ARN -80 °C** et le **kit d'extraction d'ADN**.
+9. **Congélateur -80 °C** : on y range l'ARN (tube visible dans son portoir) → nuage de froid → un **bloc de glace** glisse, tombe et rebondit.
+10. **Évier** : faire fondre la glace sous le robinet → **petite clé argentée**.
+11. **Placard de la paillasse centrale** (côté sud, 3ᵉ porte depuis l'ouest) → **protocole** de séquençage de Tom.
+12. **Incubateur CO₂** (petite clé) → **flasque T-07** (les flasques T-05 et T-06 sont des leurres).
+13. **Hotte (PSM)** : flasque + kit → extraction (ellipse « 30 minutes plus tard ») → **tube d'ADN**.
+14. **Clé de secours** scotchée au fond, **sous la paillasse de la hotte**, près de la DASRI : visible seulement **accroupi (Ctrl)**.
+15. **Armoire de sécurité** (jaune, à gauche en arrivant) → **éthanol 80 %** (autres solvants = leurres).
+16. **Robot de pipetage vitré** : ADN + éthanol → préparation des librairies (fragmentation, adaptateurs, purification sur billes magnétiques, lavages à l'éthanol) → **flowcell**.
+17. **Séquenceur NX-7** : flowcell → ellipse « Trois heures plus tard… » (l'horloge avance) → statistiques + **Imprimer le compte rendu**.
+18. **Rapport de run** imprimé au bureau : « Séquenceur NX-7 — **Labo 542A** ».
+19. **Affiche** : « le code des digicodes de salle est le numéro de la pièce » → digicode de sortie (1 2 3 / 4 5 6 / 7 8 9 / A 0 B) : **542A**.
+20. **Jeter ses gants** dans la poubelle à gants avant de toucher la poignée → sortie.
 
-## Énigme 3 — Le tiroir de Tom et le microscope
-- Le tiroir annoté « Tom » est fermé par un **cadenas à 4 chiffres** : combinaison **5123** (le numéro de poste).
-- Dedans : un papier avec une **lame de microscope scotchée**, annoté « Coïncidence ! Pile le code du congélateur 1 ! ».
-- On décroche la lame et on la met sous le **microscope**.
-- Au microscope : des cellules **rosées** et **mauve foncé** sur une **cellule de Malassez**.
-- Le nombre de cellules rosées par quart de comptage, lu de gauche à droite et de haut en bas, donne le code : **7 7 6 4**.
+## Disposition
+- Baie 1 (gauche) : **séquenceur**. Baie 2 : **robot vitré**. Baie 3 : **hotte**, avec la DASRI dessous.
+- Ligne au sol en L : vestiaire et bureau hors zone de manip.
+- Le numéro de salle n'apparaît que sur le rapport de run.
 
-### Mécanique d'inventaire nécessaire
-- Maintenir la touche **1** affiche l'objet 1 en gros plan (on peut le regarder), **2** pour l'objet 2, etc.
-- Le **dernier objet regardé** est l'objet **sélectionné** pour l'action suivante (ex. poser la lame sous le microscope).
+## Mécaniques
+- Inventaire 10 cases, touches **1 à 0** maintenues pour regarder un objet (il passe en main).
+- Avec un objet en main : clic sur une cible = l'utiliser ; clic sur le sol / un meuble / un tiroir ouvert = **le poser** (on le reprend d'un clic) ; clic sur une cible inadaptée = message en boucle (« Mais que ferais-je avec ça ? »…). Clic droit = ranger.
+- **Ctrl** maintenu = s'accroupir.
+- Tous les tiroirs et placards se ferment et se rouvrent.
 
-## Énigme 4 — Le frigo et le -80 °C
-- Le frigo 1 s'ouvre avec le code **7764** sur son clavier.
-- Dedans il fait froid (effet de froid), beaucoup de réactifs. L'un est marqué **-80 °C**.
-- On peut prendre plusieurs réactifs, dont celui-ci.
-- Il faut le ranger dans le **congélateur -80 °C**. En le mettant, un **bloc de glace** tombe ; on peut le ramasser.
-
-## Énigme 5 — Le bloc de glace
-- Faire **fondre la glace sous l'eau du robinet** (évier) → on y trouve une **clé**.
-
-## Décisions (24/10/2026)
-- Le code 7764 ouvre le **frigo +4 °C** (le papier de Tom dit « Pile le code du frigo ! »). Seul le dernier réactif va au **-80 °C**.
-- Gel : 4 pistes étiquetées **A C G T**, puits (−) en haut, (+) en bas, « migration ↓ ». Lecture du bas vers le haut. Les bandes ne sont bien visibles qu'UV allumés **et** lumière éteinte.
-- Cellules : **coloration de viabilité**. Rosées = vivantes (comptées), mauve foncé = mortes. Comptage 7 / 7 / 6 / 4 (+ 3 / 4 / 2 / 5 mortes) → 63 % de viabilité, expliqué par le Dr. Leroy.
-- Pas d'aimants.
-- Tous les codes se tournent / se cliquent à la souris, sauf TTGACG qui se tape sur le PC.
-- Ligne au sol en L : le bureau et le vestiaire sont hors zone ; l'évier, le frigo, la poubelle à gants et la sortie sont en zone de manip.
-- Objet utilisé au mauvais endroit : 4 messages qui tournent en boucle (« Mais que ferais-je avec ça ? »…).
-
-## Ajouts faits pour relier les énigmes (à valider)
-- **Tiroir de Paul** : contient son carnet de labo, qui rappelle que Tom doit finir le compte rendu et que le gel est resté sur le transilluminateur.
-- **Brouillon de la corbeille** : note de Tom sur le sens de lecture du gel (indice facultatif).
-- **Tiroir du bas** (sans étiquette) : s'ouvre, ne contient rien d'utile.
-- **Poubelle à gants** (mur est) : on y retire et jette ses gants ; la porte de sortie refuse qu'on la touche avec des gants.
-- Fin de la version de test : un message s'affiche quand on obtient la petite clé.
-
-## Points encore ouverts
-- **Clé de l'énigme 5** : qu'ouvre-t-elle ?
-- Énigme finale et **code de la porte de sortie**.
-
-## Éléments construits pour ce scénario
-Bureau (PC portable, tiroirs Paul / Tom / libre, poubelle à papier), imprimante, interrupteur + pénombre, transilluminateur UV avec vitre, gel, microscope utilisable, cadenas 4 chiffres, clavier du frigo, frigo ouvrable, congélateur -80 °C ouvrable, évier avec eau, inventaire à touches 1–6 avec vue rapprochée.
-Voir aussi `BACKLOG.md`.
+## Pistes ouvertes
+- Rien de bloquant. Idées : indices gradués du Dr. Leroy si on bloque longtemps, sauvegarde de la progression.

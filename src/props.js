@@ -224,7 +224,19 @@ function buildDesk(scene, refs, colliders) {
     g.fillStyle = '#111'; g.font = '12px sans-serif'; g.fillText('T. ATTOT — Poste 51.23', 14, 330);
   });
   plane(sheet, 0.21, 0.28, std({ map: reportTex, side: THREE.DoubleSide }), 0, 0, 0, { rx: -Math.PI / 2 });
-  refs.printer = { group: pr, sheet };
+  const seqSheet = new THREE.Group();
+  seqSheet.visible = false;
+  pr.add(seqSheet);
+  const seqTex = canvasTex(256, 360, (g) => {
+    g.fillStyle = '#fff'; g.fillRect(0, 0, 256, 360);
+    g.fillStyle = '#14b8a6'; g.fillRect(0, 0, 256, 8);
+    g.fillStyle = '#111'; g.font = 'bold 17px sans-serif'; g.fillText('Compte rendu de run', 14, 40);
+    g.font = '12px sans-serif'; g.fillText('Séquenceur NX-7', 14, 62);
+    g.fillStyle = '#999'; for (let i = 0; i < 9; i++) g.fillRect(14, 90 + i * 18, 110 + Math.random() * 110, 5);
+    g.fillStyle = '#14b8a6'; g.fillRect(14, 270, 120, 40);
+  });
+  plane(seqSheet, 0.21, 0.28, std({ map: seqTex, side: THREE.DoubleSide }), 0, 0, 0, { rx: -Math.PI / 2 });
+  refs.printer = { group: pr, sheet, seqSheet };
 
   // chaise à roulettes
   const ch = new THREE.Group();
@@ -273,7 +285,18 @@ export function drawLaptop(refs, state) {
     return;
   }
   screenMat.emissiveIntensity = 1.1;
-  if (state.startsWith('boot')) {
+  if (state === 'login') {
+    const grd = g.createLinearGradient(0, 0, W, H);
+    grd.addColorStop(0, '#1d4f7a'); grd.addColorStop(1, '#0f2a44');
+    g.fillStyle = grd; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#2b3a4f'; g.beginPath(); g.arc(W / 2, 110, 42, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#fff'; g.font = 'bold 30px sans-serif'; g.textAlign = 'center'; g.fillText('PH', W / 2, 121);
+    g.font = 'bold 20px sans-serif'; g.fillText('P. Hemick', W / 2, 185);
+    g.fillStyle = '#ffffff'; g.fillRect(W / 2 - 110, 205, 220, 34);
+    g.fillStyle = '#5a6670'; g.font = '16px sans-serif'; g.fillText('Mot de passe…', W / 2, 228);
+    g.fillStyle = '#cfe0f0'; g.font = '14px sans-serif'; g.fillText('🔒 Session verrouillée', W / 2, 275);
+    g.textAlign = 'left';
+  } else if (state.startsWith('boot')) {
     const p = Number(state.split(':')[1] || 0);
     g.fillStyle = '#0b1220'; g.fillRect(0, 0, W, H);
     g.fillStyle = '#e9eef2'; g.font = 'bold 34px sans-serif'; g.textAlign = 'center';
@@ -340,7 +363,8 @@ function buildTransilluminator(scene, refs) {
   // puits
   laneX.forEach((x) => box(t, 0.03, 0.004, 0.006, std({ color: 0x5b6466 }), x, 0.103, -0.088, { cast: false }));
   // bandes : lues du bas (+, près du joueur) vers le haut (−) = TTGACG
-  const bandMat = std({ color: 0x3a2a2a, emissive: 0xff8a3d, emissiveIntensity: 0, roughness: 0.4 });
+  const bandMat = std({ color: 0xd9cbb8, emissive: 0xff8a3d, emissiveIntensity: 0, roughness: 0.4 });
+  bandMat.visible = false; // l'ADN coloré n'est visible que sous UV
   const seq = CONFIG.gelCode.split('');
   seq.forEach((base, i) => {
     const x = laneX[lanes.indexOf(base)];
@@ -501,6 +525,13 @@ function buildFridge(scene, refs, colliders) {
   box(fr, 0.18, 0.08, 0.2, std({ color: 0xffffff, roughness: 0.5 }), 0.12, 1.0, -0.15);
   tube('deco1', 0.1, 1.36, 0.1, 0xc8f7a6, mats.blueCap, 0.18, 0.03);
   tube('deco2', 0.02, 1.36, -0.12, 0xfff09a, mats.redCap, 0.16, 0.03);
+  const kit = new THREE.Group();
+  kit.position.set(-0.13, 1.36, 0.02);
+  fr.add(kit);
+  rbox(kit, 0.11, 0.09, 0.17, 0.008, std({ color: 0xf6f7f9, roughness: 0.45 }), 0, 0.045, 0);
+  box(kit, 0.112, 0.02, 0.172, std({ color: 0x1e5bb8, roughness: 0.5 }), 0, 0.075, 0);
+  plane(kit, 0.16, 0.05, std({ map: labelTex('KIT EXTRACTION ADN', { w: 512, h: 160, bg: '#ffffff', fg: '#1e5bb8', size: 44 }) }), -0.0565, 0.04, 0, { ry: -Math.PI / 2 });
+  reagents.kit = kit;
   delete reagents.deco1; delete reagents.deco2;
 
   refs.fridge = { group: fr, door, keypad: kp, led, reagents, glow, coldLight, front: new THREE.Vector3(4.65 - D / 2, 1.2, 3.0) };
@@ -535,17 +566,33 @@ function buildFreezer(scene, refs, colliders) {
   const disp = T.textPlaneTexture('-80 °C', { bg: '#000', fg: '#7fdcff', size: 72 });
   plane(door, 0.22, 0.08, std({ color: 0x0c1a12, emissive: 0x6ad1ff, emissiveIntensity: 0.6, emissiveMap: disp }), -W / 2 - 0.1, 1.7, 0.061);
   plane(door, 0.3, 0.06, std({ map: labelTex('ÉCHANTILLONS -80 °C', { w: 512, h: 96, bg: '#ffffff', fg: '#1e5bb8', size: 42 }) }), -W / 2, 1.5, 0.061);
-  // bloc de glace (caché tant qu'il n'est pas tombé)
+  // portoir où l'on range l'ARN (étagère du milieu, à l'avant)
+  const rack = new THREE.Group();
+  rack.position.set(0.18, 0.96, 0.2);
+  fz.add(rack);
+  rbox(rack, 0.16, 0.06, 0.1, 0.006, std({ color: 0xf6f7f9, roughness: 0.5 }), 0, 0.03, 0);
+  plane(rack, 0.12, 0.03, std({ map: labelTex('ARN — T-07', { w: 512, h: 128, bg: '#ffffff', fg: '#c62828', size: 56 }) }), 0, 0.03, 0.051);
+  const arnTube = new THREE.Group();
+  arnTube.position.set(0, 0.05, 0);
+  arnTube.visible = false;
+  rack.add(arnTube);
+  cyl(arnTube, 0.017, 0.017, 0.09, mats.labGlass, 0, 0.045, 0, {}, 14);
+  cyl(arnTube, 0.018, 0.018, 0.016, mats.yellow, 0, 0.098, 0, {}, 14);
+  // bloc de glace collé au bord de l'étagère du haut (le centre du groupe = centre du bloc)
   const ice = new THREE.Group();
-  ice.visible = false;
+  ice.position.set(-0.17, 1.41 + 0.055, 0.22);
+  ice.rotation.y = 0.15;
   fz.add(ice);
-  const iceMat = new THREE.MeshPhysicalMaterial({ color: 0xd6f1ff, roughness: 0.15, transmission: 0, transparent: true, opacity: 0.85, envMapIntensity: 1.5 });
-  rbox(ice, 0.14, 0.11, 0.12, 0.02, iceMat, 0, 0.055, 0);
+  const iceMat = new THREE.MeshPhysicalMaterial({ color: 0xd6f1ff, roughness: 0.15, transparent: true, opacity: 0.85, envMapIntensity: 1.5 });
+  rbox(ice, 0.14, 0.11, 0.12, 0.02, iceMat, 0, 0, 0);
   const inKey = makeKey(0xaab4bd);
-  inKey.position.set(0, 0.055, 0);
   inKey.rotation.set(0, 0.4, Math.PI / 2);
+  inKey.scale.setScalar(1.3);
   ice.add(inKey);
-  refs.freezer = { group: fz, door, ice };
+  const coldLight = new THREE.PointLight(0xcfe8ff, 0, 1.6, 1.4);
+  coldLight.position.set(0, 1.2, 0.25);
+  fz.add(coldLight);
+  refs.freezer = { group: fz, door, ice, arnTube, coldLight, W, D };
   colliders.push({ minX: 3.85, maxX: 4.75, minZ: -4, maxZ: -3.2 });
 }
 

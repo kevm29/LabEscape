@@ -56,7 +56,7 @@ function initMaterials() {
     rubber: std({ color: 0x2a2d30, roughness: 0.9 }),
   });
 }
-export { mats };
+export { mats, add, box, rbox, cyl, plane, labelMat, bottle, erlenmeyer, beaker, tubeRack };
 
 // ---------- helpers ----------
 function add(parent, geo, mat, x = 0, y = 0, z = 0, { cast = true, receive = true, rx = 0, ry = 0, rz = 0 } = {}) {
@@ -452,37 +452,25 @@ export function buildRoom(scene) {
   refs.entryDoor = entryDoor;
 
   // ===== ZONE DE MANIP : hottes vitrées au nord =====
-  const hoodA = makeHood(scene, -3.2, {
-    props: (g) => {
-      bottle(g, -0.45, 0.92, -0.15, { liquid: 0x9fd3ff });
-      bottle(g, -0.35, 0.92, -0.22, { amber: true, h: 0.2 });
-      erlenmeyer(g, -0.05, 0.92, -0.05, 0xff8fb0);
-      tubeRack(g, 0.35, 0.92, -0.1, 0.1);
-      cyl(g, 0.11, 0.11, 0.05, mats.darkSteel, 0.4, 0.945, 0.15);
-    },
-  });
-  const hoodB = makeHood(scene, -1.6, {
+  // hottes 1 et 2 → séquenceur et robot (voir machines.js) ; la 3e reste une hotte (PSM)
+  const hoodC = makeHood(scene, 0.0, {
     withBin: true,
     props: (g) => {
-      beaker(g, -0.4, 0.92, -0.1, 0x7ee0b0);
-      beaker(g, -0.28, 0.92, 0.02, 0xfff09a, 0.8);
-      // poubelle à piquants (petit conteneur jaune)
-      rbox(g, 0.12, 0.16, 0.1, 0.01, mats.yellow, 0.45, 1.0, -0.2);
-      cyl(g, 0.03, 0.03, 0.01, mats.redCap, 0.45, 1.085, -0.2);
-      // pipettes sur support
-      box(g, 0.04, 0.3, 0.04, mats.darkSteel, 0.1, 1.07, -0.25);
-      for (let i = 0; i < 3; i++) cyl(g, 0.012, 0.007, 0.22, mats.white, 0.05 + i * 0.05, 1.12, -0.21, { rx: 0.05 }, 10);
+      tubeRack(g, -0.45, 0.92, -0.18, 0.1);
+      bottle(g, 0.45, 0.92, -0.22, { liquid: 0xc8a0ff, cap: mats.redCap });
+      // mini-centrifugeuse et vortex
+      cyl(g, 0.07, 0.075, 0.08, new THREE.MeshStandardMaterial({ color: 0xe9ecef, roughness: 0.35 }), 0.15, 0.96, -0.25, {}, 24);
+      cyl(g, 0.055, 0.055, 0.012, mats.blueCap, 0.15, 1.006, -0.25, {}, 24);
+      rbox(g, 0.1, 0.07, 0.12, 0.012, mats.white, -0.12, 0.955, -0.25);
+      cyl(g, 0.03, 0.03, 0.02, mats.black, -0.12, 1.0, -0.25, {}, 16);
+      // poubelle à piquants
+      rbox(g, 0.12, 0.16, 0.1, 0.01, mats.yellow, 0.62, 1.0, -0.25);
+      cyl(g, 0.03, 0.03, 0.01, mats.redCap, 0.62, 1.085, -0.25);
     },
   });
-  const hoodC = makeHood(scene, 0.0, {
-    props: (g) => {
-      microscope(g, -0.2, 0.92, -0.05, 0.2);
-      bottle(g, 0.4, 0.92, -0.2, { liquid: 0xc8a0ff, cap: mats.redCap });
-      erlenmeyer(g, 0.25, 0.92, 0.05, 0x9ef0ff, 0.8);
-    },
-  });
-  for (const h of [hoodA, hoodB, hoodC]) colliders.push(h.collider);
-  refs.dasri = hoodB.bin;
+  colliders.push(hoodC.collider);
+  refs.dasri = hoodC.bin;
+  refs.hood = hoodC.group;
 
   // paillasse nord-est : incubateur + centrifugeuse
   const ne = new THREE.Group();
@@ -495,10 +483,7 @@ export function buildRoom(scene) {
     box(ne, 0.6, 0.76, 0.015, mats.laminateGrey, -0.93 + i * 0.62, 0.48, 0.38);
     box(ne, 0.12, 0.012, 0.02, mats.steel, -0.93 + i * 0.62, 0.8, 0.395);
   }
-  // incubateur CO2
-  rbox(ne, 0.7, 0.8, 0.62, 0.02, mats.steel, -0.75, 1.32, -0.02);
-  box(ne, 0.5, 0.55, 0.01, mats.glass, -0.8, 1.3, 0.295, { cast: false });
-  plane(ne, 0.16, 0.06, new THREE.MeshStandardMaterial({ color: 0x0c1a12, emissive: 0xff7a3d, emissiveIntensity: 0.5, emissiveMap: T.textPlaneTexture('37.0°C 5% CO2', { bg: '#000', fg: '#ff9a5a', size: 52 }) }), -0.5, 1.62, 0.302);
+  refs.neBench = ne;
   // centrifugeuse
   rbox(ne, 0.45, 0.3, 0.5, 0.06, new THREE.MeshStandardMaterial({ color: 0xe8ecef, roughness: 0.35 }), 0.3, 1.07, 0);
   cyl(ne, 0.17, 0.17, 0.02, mats.darkSteel, 0.3, 1.225, -0.02);
@@ -512,15 +497,48 @@ export function buildRoom(scene) {
   const cb = new THREE.Group();
   cb.position.set(-0.7, 0, -1.4);
   scene.add(cb);
-  box(cb, 3.7, 0.86, 0.9, mats.laminate, 0, 0.47, 0);
+  // caisson creux : placards ouvrables des deux côtés
   box(cb, 3.6, 0.08, 0.84, mats.baseboard, 0, 0.04, 0);
   box(cb, 3.8, 0.04, 1.0, mats.epoxy, 0, 0.9, 0);
+  const shell = mats.laminate, inside = new THREE.MeshStandardMaterial({ color: 0xd9dee2, roughness: 0.7 });
+  box(cb, 3.7, 0.02, 0.9, inside, 0, 0.09, 0);
+  box(cb, 3.7, 0.02, 0.9, shell, 0, 0.87, 0, { cast: false });
+  box(cb, 3.7, 0.76, 0.02, inside, 0, 0.48, 0);
+  const edges = [-1.835, -1.215, -0.605, 0.005, 0.615, 1.225, 1.835];
+  for (const x of edges) box(cb, 0.02, 0.76, 0.9, Math.abs(x) > 1.8 ? shell : inside, x, 0.48, 0);
+  box(cb, 3.7, 0.02, 0.9, inside, 0, 0.47, 0); // étagère intermédiaire
+  refs.cupboards = [];
   for (let i = 0; i < 6; i++) {
     for (const s of [-1, 1]) {
-      box(cb, 0.58, 0.76, 0.015, mats.laminateGrey, -1.52 + i * 0.61, 0.48, s * 0.452);
-      box(cb, 0.12, 0.012, 0.02, mats.steel, -1.52 + i * 0.61, 0.8, s * 0.468);
+      const cx = -1.52 + i * 0.61;
+      const pivot = new THREE.Group();
+      pivot.position.set(cx - 0.29, 0.48, s * 0.452);
+      cb.add(pivot);
+      box(pivot, 0.58, 0.76, 0.015, mats.laminateGrey, 0.29, 0, 0);
+      box(pivot, 0.02, 0.14, 0.02, mats.steel, 0.52, 0.18, s * 0.016);
+      refs.cupboards.push({ pivot, side: s, open: false, cx, index: i });
     }
   }
+  // contenus des placards (décor)
+  const tipBox = (x, y, z, c) => {
+    rbox(cb, 0.12, 0.07, 0.09, 0.006, new THREE.MeshStandardMaterial({ color: c, roughness: 0.5 }), x, y + 0.035, z);
+    box(cb, 0.115, 0.004, 0.085, mats.white, x, y + 0.072, z, { cast: false });
+  };
+  tipBox(-1.6, 0.1, 0.25, 0x2f7fd6); tipBox(-1.45, 0.1, 0.25, 0xf2c200); tipBox(-1.6, 0.48, 0.25, 0x2f7fd6);
+  tipBox(0.25, 0.1, -0.25, 0xc62828); tipBox(0.4, 0.1, -0.25, 0x2f7fd6);
+  tipBox(1.5, 0.48, 0.22, 0x7ee0b0); tipBox(-0.9, 0.48, -0.25, 0xf2c200);
+  rbox(cb, 0.22, 0.12, 0.13, 0.008, new THREE.MeshStandardMaterial({ color: 0xb98d5a, roughness: 0.85 }), 0.95, 0.16, 0.22);
+  rbox(cb, 0.22, 0.12, 0.13, 0.008, new THREE.MeshStandardMaterial({ color: 0xb98d5a, roughness: 0.85 }), -0.95, 0.16, -0.22);
+  bottle(cb, 1.45, 0.1, -0.25, { liquid: 0xffffff, fill: 0.7, h: 0.22, r: 0.05 });
+  bottle(cb, 1.6, 0.1, -0.22, { liquid: 0x9fd3ff, fill: 0.5, h: 0.22, r: 0.05 });
+  // le classeur du protocole : placard côté sud, 3e porte en partant de l'ouest
+  const binder = new THREE.Group();
+  binder.position.set(-0.3, 0.48, 0.25);
+  cb.add(binder);
+  rbox(binder, 0.05, 0.31, 0.25, 0.006, new THREE.MeshStandardMaterial({ color: 0x1e5bb8, roughness: 0.5 }), 0, 0.165, 0, { rz: -0.08 });
+  const spine = T.textPlaneTexture('PROTOCOLE', { w: 512, h: 96, bg: '#ffffff', fg: '#1e5bb8', size: 56 });
+  plane(binder, 0.22, 0.04, new THREE.MeshStandardMaterial({ map: spine }), 0.0, 0.18, 0.126, { rz: Math.PI / 2 - 0.08 });
+  refs.protocolBinder = binder;
   // étagère à réactifs au centre
   for (const x of [-1.8, 0, 1.8]) box(cb, 0.03, 0.75, 0.25, mats.steel, x, 1.295, 0);
   box(cb, 3.63, 0.02, 0.26, mats.laminate, 0, 1.3, 0);
@@ -553,15 +571,6 @@ export function buildRoom(scene) {
   addCol(0.6, 1.0, -2.45, -2.05);
 
   // ===== ARMOIRE DE SÉCURITÉ (mur ouest, zone de manip) =====
-  const ac = new THREE.Group();
-  ac.position.set(minX + 0.3, 0, -1.0);
-  scene.add(ac);
-  rbox(ac, 0.6, 1.95, 1.1, 0.02, mats.yellow, 0, 0.975, 0);
-  box(ac, 0.01, 1.85, 0.005, mats.yellowDark, 0.301, 1.0, 0);
-  for (const s of [-1, 1]) box(ac, 0.03, 0.25, 0.025, mats.black, 0.31, 1.05, s * 0.06);
-  plane(ac, 0.25, 0.25, labelMat(T.cabinetLabelTexture()), 0.302, 1.6, 0.27, { ry: Math.PI / 2 });
-  plane(ac, 0.25, 0.25, labelMat(T.cabinetLabelTexture()), 0.302, 1.6, -0.27, { ry: Math.PI / 2 });
-  refs.safetyCabinet = ac;
   addCol(minX, minX + 0.62, -1.56, -0.44);
 
   // ===== MUR EST : sortie, digicode, évier, frigo =====
@@ -583,7 +592,7 @@ export function buildRoom(scene) {
   kp.rotation.y = -Math.PI / 2;
   scene.add(kp);
   rbox(kp, 0.11, 0.16, 0.03, 0.008, mats.darkSteel, 0, 0, 0);
-  const kpTex = T.keypadTexture();
+  const kpTex = T.keypadTexture(T.KEYS_ROOM);
   plane(kp, 0.09, 0.135, new THREE.MeshStandardMaterial({ map: kpTex, emissive: 0xffffff, emissiveMap: kpTex, emissiveIntensity: 0.25, roughness: 0.4 }), 0, 0, 0.016);
   const led = add(kp, new THREE.SphereGeometry(0.006, 10, 8), new THREE.MeshStandardMaterial({ color: 0xff2020, emissive: 0xff2020, emissiveIntensity: 2 }), 0.04, 0.072, 0.016);
   refs.keypad = kp;

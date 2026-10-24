@@ -117,7 +117,41 @@
   .paper td:first-child { color: #5a6670; width: 40%; }
   .paper footer { margin-top: 14px; font-size: 12px; text-align: right; }
   .paper.crumpled { background: #f1eee3; transform: rotate(-1.5deg); background-image: linear-gradient(115deg, transparent 40%, rgba(0,0,0,0.04) 41%, transparent 43%), linear-gradient(30deg, transparent 60%, rgba(0,0,0,0.05) 61%, transparent 63%); }
-  .paper.note { min-height: 180px; }
+  .paper.note { min-height: 190px; }
+  .paper .postit { position: absolute; top: 12px; right: 12px; width: 92px; padding: 8px; background: #fff27a; transform: rotate(4deg); box-shadow: 0 3px 8px rgba(0,0,0,0.25); font: 13px 'Segoe Print', 'Comic Sans MS', cursive; color: #1f2933; line-height: 1.35; }
+  .paper .taped-slide { margin: 34px auto 0; width: 62%; height: 34px; border-radius: 3px; background: linear-gradient(90deg, #f3f3f3 0 20%, rgba(214,238,250,0.9) 20%); border: 1px solid #9fc3d6; position: relative; }
+  .paper .taped-slide::after { content: ''; position: absolute; left: 58%; top: 8px; width: 16px; height: 16px; border-radius: 50%; background: rgba(217,163,198,0.8); }
+  .paper .tape-mark { margin: 34px auto 0; width: 62%; height: 34px; border: 1px dashed #c9c3b0; border-radius: 3px; }
+  .paper .steps { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 7px; font-size: 12.5px; }
+  .paper.protocol header { font-size: 13px; }
+  #viewer-body .act { text-align: center; color: var(--accent); font-weight: 600; }
+
+  #ellipse { position: fixed; inset: 0; z-index: 45; background: #000; display: grid; place-items: center; opacity: 0; pointer-events: none; transition: opacity .8s ease; }
+  #ellipse.show { opacity: 1; pointer-events: auto; }
+  #ellipse-text { font: italic 600 clamp(22px, 4vw, 34px) var(--font); color: #e9eef2; letter-spacing: 0.02em; }
+
+  /* écran du séquenceur */
+  #seq .card { width: min(520px, calc(100vw - 32px)); }
+  #seq .seq-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  #seq .seq-head strong { color: #14b8a6; font-family: var(--mono); letter-spacing: 0.06em; }
+  #seq .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  #seq .stat { padding: 12px; border-radius: 10px; background: rgba(20,184,166,0.08); border: 1px solid rgba(20,184,166,0.3); }
+  #seq .stat b { display: block; font: 700 22px var(--mono); color: #e9eef2; font-variant-numeric: tabular-nums; }
+  #seq .stat span { font-size: 12px; color: var(--muted); }
+  #seq .ok { margin-top: 12px; color: var(--ok); font-weight: 600; }
+  #seq-print { background: #14b8a6; color: #04241f; }
+  #seq-print:disabled { opacity: 0.55; cursor: default; }
+  #seq-status { margin-top: 10px; font-size: 13px; color: var(--muted); min-height: 1em; }
+
+  /* écran de connexion du PC */
+  #pc-login { display: grid; place-items: center; min-height: 240px; }
+  #pc-login[hidden], #pc-window[hidden] { display: none; }
+  #pc-login .box { width: 280px; text-align: center; color: #fff; display: grid; gap: 10px; }
+  #pc-login .avatar-pc { width: 64px; height: 64px; margin: 0 auto; border-radius: 50%; background: #2b3a4f; display: grid; place-items: center; font: 700 22px var(--font); border: 2px solid rgba(255,255,255,0.5); }
+  #pc-pass { font: 600 18px var(--mono); padding: 8px 10px; border-radius: 6px; border: 0; text-align: center; width: 100%; color: #1a2530; background: #fff; }
+  #pc-pass:focus { outline: 3px solid rgba(63,130,230,0.5); }
+  #pc-login-btn { padding: 8px 14px; border: 0; border-radius: 6px; background: #1e5bb8; color: #fff; font: 600 14px var(--font); cursor: pointer; }
+  #pc-pass-err { color: #fca5a5; font-size: 13px; min-height: 1em; }
   .paper .tape { position: absolute; top: 18px; left: 22%; width: 60px; height: 20px; background: rgba(240,230,170,0.85); transform: rotate(-4deg); }
   .paper .tape.r { left: auto; right: 22%; transform: rotate(5deg); }
 
@@ -304,7 +338,17 @@
   <div>
     <div class="screen-frame">
       <div class="desktop">
-        <div class="window">
+        <div id="pc-login" hidden>
+          <div class="box">
+            <div class="avatar-pc">PH</div>
+            <div><b>P. Hemick</b><br><span style="font-size:12px;opacity:.75">Session verrouillée</span></div>
+            <label for="pc-pass" style="font-size:13px">Mot de passe</label>
+            <input id="pc-pass" type="password" maxlength="20" autocomplete="off" spellcheck="false">
+            <button id="pc-login-btn">Se connecter</button>
+            <div id="pc-pass-err" role="status"></div>
+          </div>
+        </div>
+        <div class="window" id="pc-window">
           <div class="titlebar"><span>LabNote — Compte rendu d’analyse</span><button id="pc-x" aria-label="Fermer la fenêtre">×</button></div>
           <div class="wbody">
             <div class="row">Échantillon : <b>T-07</b> · Analyse : <b>séquençage (gel 4 pistes)</b></div>
@@ -335,6 +379,23 @@
   </div>
 </div>
 
+<div id="seq" class="modal">
+  <div class="card">
+    <div class="seq-head"><strong>NX-7 · RUN T-07</strong><button id="seq-close" class="x-btn" aria-label="Fermer">×</button></div>
+    <div class="stats">
+      <div class="stat"><b>412 M</b><span>Lectures</span></div>
+      <div class="stat"><b>93,4 %</b><span>Bases ≥ Q30</span></div>
+      <div class="stat"><b>1 840</b><span>Clusters (K/mm²)</span></div>
+      <div class="stat"><b>38 ×</b><span>Couverture moyenne</span></div>
+    </div>
+    <div class="ok">✓ Run terminé — statut PASS</div>
+    <button id="seq-print" class="primary">Imprimer le compte rendu</button>
+    <div id="seq-status" role="status"></div>
+  </div>
+</div>
+
+<div id="ellipse"><div id="ellipse-text"></div></div>
+
 <div id="scope" class="modal">
   <div class="wrap">
     <canvas id="scope-canvas" width="720" height="720"></canvas>
@@ -347,22 +408,25 @@
 <div id="win" class="modal">
   <div>
     <div class="badge">LABO ÉVACUÉ</div>
-    <h2>Vous êtes sorti !</h2>
+    <h2>Analyses terminées !</h2>
+    <p class="lede" style="margin:0">Les manips de Tom sont bouclées, et vous quittez le labo en bonne et due forme.</p>
     <p class="lede">Temps : <b id="win-time"></b></p>
   </div>
 </div>
 
 <div id="start">
   <div class="start-card">
-    <div class="badge">☣ NSB2 — SALLE 214</div>
+    <div class="badge">☣ NSB2 — LABORATOIRE</div>
     <h1>Lab <span>Escape</span></h1>
-    <p class="lede">Premier jour de stage au laboratoire. La porte vient de se refermer derrière vous… Avant de toucher à quoi que ce soit, le règlement est formel : on s’équipe.</p>
+    <p class="lede">Tom, le doctorant de l’équipe, est tombé malade avant d’avoir fini ses manips. Vous êtes le stagiaire du moment : le Dr. Leroy vous a ouvert le labo pour finaliser ses analyses avant le week-end. D’après Tom, « tout est accessible, d’une façon ou d’une autre ».</p>
     <div class="controls">
       <div class="keys"><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>↑</kbd><kbd>↓</kbd></div><div>Se déplacer</div>
       <div class="keys"><kbd>Souris</kbd></div><div>Regarder autour</div>
       <div class="keys"><kbd>Molette</kbd></div><div>Zoomer</div>
       <div class="keys"><kbd>Clic</kbd> / <kbd>E</kbd></div><div>Interagir, fouiller, prendre</div>
-      <div class="keys"><kbd>1</kbd>…<kbd>6</kbd> maintenu</div><div>Regarder un objet (il passe en main)</div>
+      <div class="keys"><kbd>Ctrl</kbd> maintenu</div><div>S’accroupir</div>
+      <div class="keys"><kbd>1</kbd>…<kbd>0</kbd> maintenu</div><div>Regarder un objet (il passe en main)</div>
+      <div class="keys"><kbd>Clic</kbd> avec un objet</div><div>L’utiliser, ou le poser où l’on vise</div>
       <div class="keys"><kbd>Clic droit</kbd></div><div>Ranger l’objet en main</div>
       <div class="keys"><kbd>Échap</kbd></div><div>Pause</div>
     </div>

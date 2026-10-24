@@ -327,7 +327,7 @@ export function posterTexture() {
     'Déchets piquants → DASRI',
     'Jamais de mains dans un DASRI',
     'Manip sous hotte (PSM) si risque',
-    'Se laver les mains en sortant',
+    'Code des portes = n° de la salle',
   ];
   g.font = `28px ${FONT}`;
   rules.forEach((r, i) => {
@@ -374,7 +374,10 @@ export function textPlaneTexture(text, { w = 512, h = 128, bg = '#0b7a3b', fg = 
   return toTexture(c);
 }
 
-export function keypadTexture() {
+export const KEYS_STD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', 'OK'];
+export const KEYS_ROOM = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', '0', 'B'];
+
+export function keypadTexture(keys = KEYS_STD) {
   const c = makeCanvas(256, 384), g = c.getContext('2d');
   g.fillStyle = '#2b3036';
   g.fillRect(0, 0, 256, 384);
@@ -384,7 +387,6 @@ export function keypadTexture() {
   g.font = `bold 38px monospace`;
   g.textAlign = 'center';
   g.fillText('- - - -', 128, 68);
-  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', 'OK'];
   keys.forEach((k, i) => {
     const x = 34 + (i % 3) * 66, y = 108 + Math.floor(i / 3) * 66;
     g.fillStyle = '#c9ced3';

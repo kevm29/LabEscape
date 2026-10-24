@@ -1,38 +1,30 @@
 # Backlog — retours de test
 
-Retours de jeu à intégrer plus tard. ✅ = fait.
+✅ = fait.
 
-## Retours du 24/10/2026 (salle 1)
+## Retours du 24/10/2026 (1)
+- ✅ Bureau sous l'affiche (PC, articles, tasse, chaise, lampe, 3 tiroirs, corbeille + brouillon).
+- ✅ Interrupteur et pénombre.
+- ✅ Lavabo avec vraie vasque.
+- ✅ Blouses renommées (Dr. P. Hemick, T. Attot), clé dans une vraie poche.
+- ✅ Plus d'aimants.
+- ✅ Remplacer des hottes par un séquenceur et un robot.
+- ✅ Ctrl pour s'accroupir.
+- ✅ Placards de la paillasse centrale ouvrables.
+- Autres placards (paillasses du fond, évier) encore fixes.
 
-### ✅ Nouveau mobilier : bureau sous l'affiche « Règles du labo » (mur sud)
-- Bureau avec ordinateur portable allumé (écran lumineux).
-- Pile d'articles scientifiques à côté.
-- Tasse à café vide, tachée de café.
-- Chaise à roulettes rangée sous le bureau.
-- Lampe de bureau.
-- Trois tiroirs :
-  - un tiroir **fermé à clé**, étiqueté « Paul » ;
-  - un tiroir **fermé**, étiqueté « Tom » ;
-  - un tiroir sans étiquette, **ouvert** (non verrouillé).
-- Poubelle à papier contenant un **brouillon** que l'on peut prendre et lire.
-
-### Déplacements / interactions
-- Touche **Ctrl** pour s'accroupir et voir dans les placards bas.
-- Rendre **tous les placards ouvrables** (portes des paillasses, etc.).
-- ✅ **Interrupteur** près de la porte d'entrée : met la pièce dans la pénombre.
-
-### Corrections de décor
-- ✅ **Lavabo** : creuser une vraie vasque (actuellement le bac est plat, pas de cuve).
-- Remplacer **une des hottes** par un **gros séquenceur** avec un écran.
-
-### Blouses et poche
-- ✅ Renommer deux blouses (sans prénom sur le badge) :
-  - « Dr C. Martin » → **Dr. P. Hemick** (Paul Hemick) ;
-  - « K. Le Gall » → **Doctorant T. Attot** (Tom Attot).
-- ✅ Dans la poche de la blouse de **Paul Hemick** (fixe, plus de tirage au hasard) : une **clé** à la place de l'aimant.
-  - Probablement la clé du tiroir « Paul » du bureau.
-- ✅ **Rendu de la poche à refaire** : l'aimant flottait au-dessus du tissu au lieu d'être visible *dans* la poche. La clé doit dépasser de l'ouverture de la poche, en partie cachée par le tissu.
-
-### Conséquences à prévoir
-- ✅ Plus d'aimants dans le jeu.
-- Le code du digicode (`src/config.js`) attend toujours son énigme.
+## Retours du 24/10/2026 (2)
+- ✅ Tiroirs Paul et Tom refermables.
+- ✅ S'accroupir avec Ctrl.
+- ✅ Bandes du gel invisibles tant que les UV sont éteints.
+- ✅ Touches 1 à 0, recherche rapide de Firefox (') neutralisée.
+- ✅ Note de Tom : on la ramasse, on la regarde, on décroche la lame soi-même ; plus de mention « 24 h ».
+- ✅ Mot de passe du PC LB_026 dans le tiroir de Paul.
+- ✅ Tube visible dans le -80 °C, chute du bloc de glace refaite (glisse, tombe, rebondit).
+- ✅ Protocole dans un placard, incubateur, hotte, robot, séquenceur, ellipse, compte rendu 542A.
+- ✅ Clé de secours sous la paillasse près de la DASRI, armoire de sécurité, éthanol 80 %.
+- ✅ Affiche : code des digicodes = numéro de la pièce.
+- ✅ Numéro de salle retiré du premier compte rendu et de l'écran titre.
+- ✅ Digicode de sortie 1 2 3 / 4 5 6 / 7 8 9 / A 0 B.
+- ✅ Poser les objets n'importe où.
+- ✅ Retirer ses gants avant de sortir.

@@ -6,6 +6,7 @@ import { makeKey } from './props.js';
 import { tween, ease, wait } from './tween.js';
 
 const EYE = 1.65;
+const CROUCH_EYE = 0.8; // accroupi : sous le plan des paillasses (0,9 m)
 const RADIUS = 0.28;
 const SPEED = 2.1;
 const MIN_FOV = 22, MAX_FOV = 72;
@@ -24,6 +25,7 @@ export class Player {
     this.targetFov = MAX_FOV;
     this.bobT = 0;
     this.shake = 0;
+    this.crouch = 0; // 0 debout → 1 accroupi
 
     camera.rotation.order = 'YXZ';
     camera.fov = MAX_FOV;
@@ -73,13 +75,17 @@ export class Player {
       if (k.has('KeyA') || k.has('ArrowLeft')) fx -= 1;
       if (k.has('KeyD') || k.has('ArrowRight')) fx += 1;
     }
+    // s'accroupir : maintenir Ctrl
+    const wantCrouch = this.enabled && !(this.blocked && this.blocked()) && (k.has('ControlLeft') || k.has('ControlRight'));
+    this.crouch += ((wantCrouch ? 1 : 0) - this.crouch) * Math.min(1, dt * 9);
     const len = Math.hypot(fx, fz) || 1;
     fx /= len; fz /= len;
+    const spd = SPEED * (1 - 0.55 * this.crouch);
     const sin = Math.sin(this.yaw), cos = Math.cos(this.yaw);
     const wish = new THREE.Vector3(
-      (-sin * fz + cos * fx) * SPEED,
+      (-sin * fz + cos * fx) * spd,
       0,
-      (-cos * fz - sin * fx) * SPEED,
+      (-cos * fz - sin * fx) * spd,
     );
     const accel = fx || fz ? 12 : 10;
     this.vel.x += (wish.x - this.vel.x) * Math.min(1, accel * dt);
@@ -103,8 +109,10 @@ export class Player {
 
     // en baissant la tête, le cou se penche : les yeux avancent et descendent un peu
     const lean = Math.max(0, Math.min(1, (-this.pitch - 0.5) / 0.85));
-    const fwd = 0.11 * lean, drop = 0.07 * lean;
-    this.camera.position.set(this.pos.x - Math.sin(this.yaw) * fwd, EYE + bob - drop, this.pos.z - Math.cos(this.yaw) * fwd);
+    const stand = 1 - this.crouch;
+    const fwd = 0.11 * lean * stand, drop = 0.07 * lean * stand;
+    const eye = EYE + (CROUCH_EYE - EYE) * this.crouch;
+    this.camera.position.set(this.pos.x - Math.sin(this.yaw) * fwd, eye + bob - drop, this.pos.z - Math.cos(this.yaw) * fwd);
     this.camera.rotation.set(this.pitch + sy, this.yaw + sx, 0);
     const f = this.camera.fov + (this.targetFov - this.camera.fov) * Math.min(1, dt * 10);
     if (Math.abs(f - this.camera.fov) > 0.01) {
@@ -112,6 +120,7 @@ export class Player {
       this.camera.updateProjectionMatrix();
     }
 
+    this.body.group.visible = this.crouch < 0.25; // accroupi, on ne dessine pas le corps
     this.body.group.position.set(this.pos.x, 0, this.pos.z);
     this.body.group.rotation.y = this.yaw;
     this.body.animateWalk(this.bobT, Math.min(1, speed / SPEED));

@@ -3,7 +3,10 @@ import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { inManipZone } from './room.js';
 import { drawLaptop } from './props.js';
+import { drawSequencer, drawRobot } from './machines.js';
 import { makeItem } from './items.js';
+import { makeItemMesh } from './items3d.js';
+import { KEYS_ROOM } from './textures.js';
 import { tween, ease, wait } from './tween.js';
 import { sfx } from './audio.js';
 
@@ -31,37 +34,49 @@ export class Game {
       dasriWarnings: 0,
       exitOpen: false,
       equippedAnnounced: false,
-      // énigmes
+      // énigmes 1 à 5
       paulOpen: false,
-      carnetTaken: false,
-      laptop: 'off', // off | booting | blocked | done
+      laptop: 'off', // off | booting | login | blocked | done
+      pcUnlocked: false,
       reportPrinted: false,
-      reportTaken: false,
       uvOn: false,
       tomOpen: false,
-      noteTaken: false,
-      freeOpen: false,
       slideOnScope: false,
-      scopeSeen: false,
       fridgeUnlocked: false,
       fridgeOpen: false,
       rnaStored: false,
       iceTaken: false,
       iceMelted: false,
       draftTaken: false,
+      // fin de partie
+      incubatorUnlocked: false,
+      incubatorOpen: false,
+      hoodFlask: false,
+      hoodKit: false,
+      extracted: false,
+      cabinetUnlocked: false,
+      cabinetOpen: false,
+      robotDna: false,
+      robotEthanol: false,
+      robot: 'idle', // idle | running | done
+      seq: 'idle', // idle | running | done
+      seqPrinted: false,
     };
     this.flags = new Set(); // messages déjà affichés une fois
     this.inventory = [];
     this.selected = null; // id de l'objet en main
+    this.viewingId = null;
     this.uselessIdx = 0;
     this.busy = false;
     this.interactables = new Map();
     this.raycaster = new THREE.Raycaster();
     this.raycaster.far = CONFIG.reach;
     this.current = null;
+    this.hit = null;
     this.prevPos = player.pos.clone();
     this.lastLineWarn = -10;
     this.time = 0;
+    this.clockOffset = 0; // ms ajoutées à l'horloge (ellipses temporelles)
     this.equippedAt = null;
     this.hintShown = false;
     this.startTime = performance.now();
@@ -82,6 +97,22 @@ export class Game {
 
   register(object, data) {
     this.interactables.set(object, data);
+  }
+
+  // Objet à ramasser : disparaît de la scène et entre dans l'inventaire
+  registerPickup(object, id, { label, message, onTake, when = () => true } = {}) {
+    const it = makeItem(id);
+    this.register(object, {
+      name: it.name,
+      label: () => (when() ? label || `Prendre : ${it.name}` : it.name),
+      action: () => {
+        if (!when()) return;
+        if (!this.pickUp(id, message)) return;
+        object.visible = false;
+        this.interactables.delete(object);
+        onTake && onTake();
+      },
+    });
   }
 
   // ======================================================================
@@ -128,7 +159,7 @@ export class Game {
     this.register(refs.entryDoor, {
       name: 'la porte d’entrée',
       label: () => 'Porte d’entrée',
-      action: () => { sfx.error(); this.ui.toast('La porte s’est verrouillée derrière vous. Le lecteur de badge reste rouge… Il va falloir trouver une autre sortie.'); },
+      action: () => { sfx.error(); this.ui.toast('La porte d’entrée s’est verrouillée derrière vous. Il faudra sortir par l’autre porte, une fois les analyses de Tom terminées.'); },
     });
     this.register(refs.exitDoor, {
       name: 'la porte de sortie',
@@ -150,13 +181,15 @@ export class Game {
       action: () => this.useExitKeypad(),
     });
 
-    // ---- énigme 1 → tiroir de Paul ----
+    // ---- bureau : tiroirs ----
     const paul = refs.drawers.paul;
     this.register(paul.group, {
       name: 'le tiroir « Paul »',
-      label: () => (state.paulOpen ? 'Tiroir « Paul »' : 'Tiroir « Paul » (fermé à clé)'),
+      container: () => (paul.open ? paul.group : null),
+      label: () => (!state.paulOpen ? 'Tiroir « Paul » (fermé à clé)' : paul.open ? 'Refermer le tiroir « Paul »' : 'Ouvrir le tiroir « Paul »'),
       action: () => {
-        if (!state.paulOpen) { sfx.error(); this.ui.toast('Fermé à clé. L’étiquette indique « Paul ».'); }
+        if (!state.paulOpen) { sfx.error(); this.ui.toast('Fermé à clé. L’étiquette indique « Paul ».'); return; }
+        this.toggleDrawer(paul);
       },
       use: (item) => {
         if (item.id !== 'clePaul' || state.paulOpen) return false;
@@ -168,13 +201,35 @@ export class Game {
         return true;
       },
     });
-    this.register(refs.carnet, {
-      name: 'le carnet',
-      label: () => 'Prendre le carnet de labo',
+    this.registerPickup(refs.carnet, 'carnetPaul', { label: 'Prendre le carnet de labo', message: 'Le carnet de labo du Dr. Hemick. Un post-it dépasse de la couverture…' });
+
+    const tom = refs.drawers.tom;
+    this.register(tom.group, {
+      name: 'le tiroir « Tom »',
+      container: () => (tom.open ? tom.group : null),
+      label: () => (!state.tomOpen ? 'Tourner le cadenas du tiroir « Tom »' : tom.open ? 'Refermer le tiroir « Tom »' : 'Ouvrir le tiroir « Tom »'),
+      action: () => (state.tomOpen ? this.toggleDrawer(tom) : this.useTomPadlock()),
+    });
+    this.registerPickup(refs.tomNote, 'noteTom', { label: 'Prendre la note de Tom', message: 'Une note de Tom… avec une lame de microscope scotchée dessus. Regardez-la de plus près.' });
+
+    const free = refs.drawers.free;
+    this.register(free.group, {
+      name: 'le tiroir du bas',
+      container: () => (free.open ? free.group : null),
+      label: () => (free.open ? 'Refermer le tiroir' : 'Ouvrir le tiroir du bas'),
       action: () => {
-        refs.carnet.visible = false;
-        state.carnetTaken = true;
-        this.pickUp('carnetPaul', 'Le carnet de labo du Dr. Hemick. Maintenez sa touche pour le lire.');
+        this.toggleDrawer(free);
+        if (free.open) this.once('free-drawer', () => this.ui.toast('Des stylos, des trombones, un vieux ticket de cantine… Rien d’utile.'));
+      },
+    });
+    this.register(refs.wastebasket, {
+      name: 'la corbeille',
+      label: () => (state.draftTaken ? 'Corbeille à papier (vide)' : 'Fouiller la corbeille à papier'),
+      action: () => {
+        if (state.draftTaken) { this.ui.toast('Il n’y a plus rien dedans.'); return; }
+        if (!this.pickUp('brouillon', 'Un brouillon froissé, de la main de Tom.')) return;
+        state.draftTaken = true;
+        refs.draftBall.visible = false;
       },
     });
 
@@ -184,6 +239,7 @@ export class Game {
       label: () => ({
         off: 'Appuyer sur le bouton d’allumage',
         booting: 'L’ordinateur démarre…',
+        login: 'Ouvrir la session',
         blocked: 'Utiliser l’ordinateur',
         done: 'Ordinateur (compte rendu enregistré)',
       }[state.laptop]),
@@ -202,59 +258,12 @@ export class Game {
     this.register(refs.printer.group, {
       name: 'l’imprimante',
       label: () => 'Imprimante',
-      action: () => this.ui.toast(state.reportPrinted ? 'Elle a fini d’imprimer.' : 'L’imprimante attend un document.'),
+      action: () => this.ui.toast(state.reportPrinted || state.seqPrinted ? 'Elle a fini d’imprimer.' : 'L’imprimante attend un document.'),
     });
-    this.register(refs.printer.sheet, {
-      name: 'le compte rendu',
-      label: () => 'Prendre le compte rendu imprimé',
-      action: () => {
-        refs.printer.sheet.visible = false;
-        state.reportTaken = true;
-        this.pickUp('compteRendu', 'Le compte rendu, encore tiède. Maintenez sa touche pour le lire.');
-      },
-    });
-    this.register(refs.wastebasket, {
-      name: 'la corbeille',
-      label: () => (state.draftTaken ? 'Corbeille à papier (vide)' : 'Fouiller la corbeille à papier'),
-      action: () => {
-        if (state.draftTaken) { this.ui.toast('Il n’y a plus rien dedans.'); return; }
-        state.draftTaken = true;
-        refs.draftBall.visible = false;
-        this.pickUp('brouillon', 'Un brouillon froissé, de la main de Tom.');
-      },
-    });
+    this.registerPickup(refs.printer.sheet, 'compteRendu', { label: 'Prendre le compte rendu imprimé', message: 'Le compte rendu, encore tiède. Maintenez sa touche pour le lire.' });
+    this.registerPickup(refs.printer.seqSheet, 'crSequencage', { label: 'Prendre le rapport de run', message: 'Le rapport de run, tout juste imprimé.' });
 
-    // ---- énigme 3 : tiroir de Tom, lame, microscope ----
-    const tom = refs.drawers.tom;
-    this.register(tom.group, {
-      name: 'le tiroir « Tom »',
-      label: () => (state.tomOpen ? 'Tiroir « Tom »' : 'Tourner le cadenas du tiroir « Tom »'),
-      action: () => this.useTomPadlock(),
-    });
-    this.register(refs.tomNote, {
-      name: 'la note',
-      label: () => 'Prendre la note et décrocher la lame',
-      action: () => {
-        refs.tomNote.visible = false;
-        state.noteTaken = true;
-        this.addItem(makeItem('noteTom'));
-        this.pickUp('lame', 'Vous décrochez la lame scotchée et prenez la note de Tom.');
-      },
-    });
-    const free = refs.drawers.free;
-    this.register(free.group, {
-      name: 'le tiroir du bas',
-      label: () => (state.freeOpen ? 'Refermer le tiroir' : 'Ouvrir le tiroir du bas'),
-      action: () => {
-        state.freeOpen = !state.freeOpen;
-        if (state.freeOpen) {
-          this.openDrawer(free);
-          this.ui.toast('Des stylos, des trombones, un vieux ticket de cantine… Rien d’utile.');
-        } else {
-          this.closeDrawer(free);
-        }
-      },
-    });
+    // ---- énigme 3 : microscope ----
     this.register(refs.microscope, {
       name: 'le microscope',
       label: () => (state.slideOnScope ? 'Regarder dans le microscope' : 'Microscope'),
@@ -297,21 +306,12 @@ export class Game {
         }
         this.removeItem(item.id);
         fr.reagents[item.id].visible = true;
+        this.register(fr.reagents[item.id], this.reagentEntry(item.id));
         this.ui.toast(`Vous reposez « ${item.name} » au frigo.`, { duration: 2.5 });
         return true;
       },
     });
-    for (const [id, mesh] of Object.entries(fr.reagents)) {
-      const it = makeItem(id);
-      this.register(mesh, {
-        name: it.name,
-        label: () => `Prendre : ${it.name}`,
-        action: () => {
-          mesh.visible = false;
-          this.pickUp(id, `Vous prenez « ${it.name} ». Brrr, c’est froid.`, 2.5);
-        },
-      });
-    }
+    for (const id of Object.keys(fr.reagents)) this.register(fr.reagents[id], this.reagentEntry(id));
     this.register(refs.freezer.group, {
       name: 'le congélateur -80 °C',
       label: () => 'Congélateur -80 °C',
@@ -321,19 +321,15 @@ export class Game {
           this.ui.toast('Ce réactif se conserve à +4 °C. Congelé, il serait abîmé.', { tone: 'warn' });
           return true;
         }
-        if (item.id !== 'arn') return false;
+        if (item.id !== 'arn' || state.rnaStored) return false;
         this.storeRna();
         return true;
       },
     });
-    this.register(refs.freezer.ice, {
-      name: 'le bloc de glace',
-      label: () => 'Ramasser le bloc de glace',
-      action: () => {
-        refs.freezer.ice.visible = false;
-        state.iceTaken = true;
-        this.pickUp('glace', 'Un bloc de glace… avec quelque chose de métallique dedans.');
-      },
+    this.registerPickup(refs.freezer.ice, 'glace', {
+      label: 'Ramasser le bloc de glace',
+      message: 'Un bloc de glace… avec quelque chose de métallique dedans.',
+      when: () => state.rnaStored,
     });
 
     // ---- énigme 5 : évier ----
@@ -348,12 +344,170 @@ export class Game {
       },
     });
 
-    // ---- divers ----
-    this.register(refs.safetyCabinet, {
-      name: 'l’armoire de sécurité',
-      label: () => 'Ouvrir l’armoire de sécurité',
-      action: () => { sfx.error(); this.ui.toast('Armoire pour produits inflammables. Fermée à clé.'); },
+    // ---- placards de la paillasse centrale + protocole ----
+    for (const c of refs.cupboards) {
+      this.register(c.pivot, {
+        name: 'le placard',
+        label: () => (c.open ? 'Fermer le placard' : 'Ouvrir le placard'),
+        action: () => {
+          c.open = !c.open;
+          sfx.cloth();
+          const r0 = c.pivot.rotation.y, r1 = c.open ? -c.side * 1.9 : 0;
+          tween(0.45, (k) => { c.pivot.rotation.y = r0 + (r1 - r0) * k; }, { easing: ease.out });
+        },
+      });
+    }
+    this.registerPickup(refs.protocolBinder, 'protocole', {
+      label: 'Prendre le classeur « Protocole »',
+      message: 'Le protocole de séquençage de Tom ! Maintenez sa touche pour le lire.',
     });
+
+    // ---- incubateur CO2 ----
+    const inc = refs.incubator;
+    this.register(inc.group, {
+      name: 'l’incubateur',
+      label: () => (!state.incubatorUnlocked ? 'Incubateur CO₂ (fermé à clé)' : state.incubatorOpen ? 'Fermer l’incubateur' : 'Ouvrir l’incubateur'),
+      action: () => {
+        if (!state.incubatorUnlocked) { sfx.error(); this.ui.toast('Fermé à clé. Une petite serrure est fixée sur la porte.'); return; }
+        this.setIncubator(!state.incubatorOpen);
+      },
+      use: (item) => {
+        if (item.id !== 'petiteCle' || state.incubatorUnlocked) return false;
+        this.removeItem('petiteCle');
+        state.incubatorUnlocked = true;
+        sfx.key();
+        this.setIncubator(true);
+        this.ui.toast('La petite clé ouvre l’incubateur ! 37 °C et 5 % de CO₂ : le CO₂ maintient le pH du milieu de culture, tamponné au bicarbonate, comme dans notre sang.',
+          { speaker: LEROY, duration: 8, tone: 'success' });
+        return true;
+      },
+    });
+    this.registerPickup(inc.t07, 'flasque', {
+      label: 'Prendre la flasque T-07',
+      message: 'La flasque T-07 de Tom. Le milieu est bien rose : les cellules sont en forme.',
+      when: () => state.incubatorOpen,
+    });
+    inc.group.children.filter((o) => o !== inc.t07 && o.isGroup && o !== inc.door).forEach((f) => {
+      this.register(f, {
+        name: 'cette flasque',
+        label: () => 'Flasque de culture',
+        action: () => this.ui.toast('Ce n’est pas l’échantillon de Tom : le protocole parle de la flasque T-07.'),
+      });
+    });
+
+    // ---- hotte (PSM) : extraction de l'ADN ----
+    this.register(refs.hood, {
+      name: 'la hotte',
+      label: () => (state.extracted ? 'Hotte (PSM)' : 'Hotte (PSM)'),
+      action: () => {
+        if (state.extracted) { this.ui.toast('L’extraction est terminée.'); return; }
+        const missing = [!state.hoodFlask && 'la flasque de cellules', !state.hoodKit && 'le kit d’extraction'].filter(Boolean);
+        this.ui.toast(`Poste de sécurité microbiologique : on y ouvre les cellules pour se protéger et protéger l’échantillon. Il manque : ${missing.join(' et ')}.`, { duration: 6 });
+      },
+      use: (item) => {
+        if (state.extracted) return false;
+        if (item.id === 'flasque' && !state.hoodFlask) {
+          this.removeItem('flasque');
+          state.hoodFlask = true;
+          this.placeInHood('flask');
+        } else if (item.id === 'kit' && !state.hoodKit) {
+          this.removeItem('kit');
+          state.hoodKit = true;
+          this.placeInHood('kit');
+        } else {
+          return false;
+        }
+        sfx.plastic();
+        if (state.hoodFlask && state.hoodKit) this.runExtraction();
+        else this.ui.toast('Posé sous la hotte.', { duration: 2 });
+        return true;
+      },
+    });
+    this.register(refs.emergencyKey, {
+      name: 'la clé scotchée',
+      label: () => 'Décoller la clé scotchée',
+      action: () => {
+        if (!this.pickUp('cleSecours', 'Une clé de secours, étiquetée « armoire sécurité » !')) return;
+        refs.emergencyKey.visible = false;
+        this.interactables.delete(refs.emergencyKey);
+      },
+    });
+
+    // ---- armoire de sécurité ----
+    const cab = refs.cabinet;
+    this.register(cab.group, {
+      name: 'l’armoire de sécurité',
+      label: () => (!state.cabinetUnlocked ? 'Armoire de sécurité (fermée à clé)' : state.cabinetOpen ? 'Fermer l’armoire' : 'Ouvrir l’armoire'),
+      action: () => {
+        if (!state.cabinetUnlocked) { sfx.error(); this.ui.toast('Armoire pour produits inflammables. Fermée à clé.'); return; }
+        this.setCabinet(!state.cabinetOpen);
+      },
+      use: (item) => {
+        if (item.id !== 'cleSecours' || state.cabinetUnlocked) return false;
+        this.removeItem('cleSecours');
+        state.cabinetUnlocked = true;
+        sfx.key();
+        this.setCabinet(true);
+        this.ui.toast('Armoire ventilée pour produits inflammables : solvants et alcools y sont rangés à l’écart des sources de chaleur, au-dessus d’un bac de rétention.',
+          { speaker: LEROY, duration: 7 });
+        return true;
+      },
+    });
+    this.registerPickup(cab.ethanol, 'ethanol', { label: 'Prendre l’éthanol 80 %', message: 'Éthanol 80 % : le réactif qu’il faut au robot.', when: () => state.cabinetOpen });
+    cab.decor.forEach((b) => this.register(b, {
+      name: 'ce solvant',
+      label: () => 'Flacon de solvant',
+      action: () => this.ui.toast('Pas besoin de ça : le protocole demande de l’éthanol 80 %.'),
+    }));
+
+    // ---- robot de pipetage ----
+    this.register(refs.robot.group, {
+      name: 'le robot',
+      label: () => {
+        if (state.robot === 'running') return 'Préparation en cours…';
+        if (state.robot === 'done') return 'Robot de pipetage (terminé)';
+        return state.robotDna && state.robotEthanol ? 'Lancer la préparation des librairies' : 'Robot de pipetage';
+      },
+      action: () => this.useRobot(),
+      use: (item) => {
+        if (state.robot !== 'idle') return false;
+        if (item.id === 'adn' && !state.robotDna) {
+          this.removeItem('adn');
+          state.robotDna = true;
+          refs.robot.sampleTube.visible = true;
+        } else if (item.id === 'ethanol' && !state.robotEthanol) {
+          this.removeItem('ethanol');
+          state.robotEthanol = true;
+          refs.robot.etohBottle.visible = true;
+        } else {
+          return false;
+        }
+        sfx.plastic();
+        drawRobot(refs, { dna: state.robotDna, ethanol: state.robotEthanol });
+        this.ui.toast(state.robotDna && state.robotEthanol ? 'Tout est chargé. Cliquez sur le robot pour lancer la préparation.' : 'Chargé dans le robot.', { duration: 3 });
+        return true;
+      },
+    });
+    this.registerPickup(refs.robot.flowcell, 'flowcell', {
+      label: 'Prendre la flowcell',
+      message: 'La flowcell est prête : direction le séquenceur.',
+      when: () => state.robot === 'done',
+    });
+
+    // ---- séquenceur ----
+    this.register(refs.sequencer.group, {
+      name: 'le séquenceur',
+      label: () => ({ idle: 'Séquenceur NX-7', running: 'Séquençage en cours…', done: 'Voir les résultats du run' }[state.seq]),
+      action: () => this.useSequencer(),
+      use: (item) => {
+        if (item.id !== 'flowcell' || state.seq !== 'idle') return false;
+        this.removeItem('flowcell');
+        this.runSequencer();
+        return true;
+      },
+    });
+
+    // ---- divers ----
     this.register(refs.poster, {
       name: 'l’affiche',
       label: () => 'Lire les règles du labo',
@@ -369,10 +523,24 @@ export class Game {
           <li>Déchets piquants → DASRI</li>
           <li>Jamais de mains dans un DASRI</li>
           <li>Manip sous hotte (PSM) si risque</li>
-          <li>Se laver les mains en sortant</li></ol>`,
+          <li>N’oubliez pas : le code des digicodes de salle est tout simplement le <b>numéro de la pièce</b> dans laquelle vous êtes.</li></ol>`,
         button: 'Fermer',
       }),
     });
+  }
+
+  reagentEntry(id) {
+    const it = makeItem(id);
+    const mesh = this.refs.fridge.reagents[id];
+    return {
+      name: it.name,
+      label: () => `Prendre : ${it.name}`,
+      action: () => {
+        if (!this.pickUp(id, `Vous prenez « ${it.name} ». Brrr, c’est froid.`, 2.5)) return;
+        mesh.visible = false;
+        this.interactables.delete(mesh);
+      },
+    };
   }
 
   // ======================================================================
@@ -396,11 +564,13 @@ export class Game {
   updateFocus() {
     if (!this.player.enabled || this.busy || this.ui.modalOpen) {
       this.current = null;
+      this.hit = null;
       this.ui.clearPrompt();
       return;
     }
     // en regardant vers le bas, on peut fouiller sa propre poche si la clé est dans le champ
     let found = null;
+    let hit = null;
     const key = this.player.body.pocketKey;
     if (this.player.pitch < -0.95 && isVisible(key)) {
       const v = key.getWorldPosition(new THREE.Vector3()).project(this.camera);
@@ -411,15 +581,21 @@ export class Game {
       const hits = this.raycaster.intersectObjects(this.scene.children, true);
       for (const h of hits) {
         if (h.object.userData.noRay || !isVisible(h.object) || h.object.material?.depthWrite === false) continue;
-        if (h.object.isPoints || h.object.isLine) continue;
+        if (h.object.isPoints || h.object.isLine || !h.face) continue;
         found = this.findInteractable(h.object);
+        hit = { point: h.point.clone(), normal: h.face.normal.clone().transformDirection(h.object.matrixWorld) };
         break; // le premier objet visible bloque la vue
       }
     }
     this.current = found;
+    this.hit = hit;
     const held = this.heldItem();
-    if (found && held) this.ui.setPrompt(`Utiliser « ${held.name} » sur ${found.name}`);
-    else this.ui.setPrompt(found ? found.label() : null);
+    if (held) {
+      if (found) this.ui.setPrompt(`Utiliser « ${held.name} » sur ${found.name}`);
+      else this.ui.setPrompt(hit ? `Poser « ${held.name} » ici` : null);
+    } else {
+      this.ui.setPrompt(found ? found.label() : null);
+    }
   }
 
   findInteractable(obj) {
@@ -433,17 +609,24 @@ export class Game {
   }
 
   interact() {
-    if (this.busy || !this.current) return;
-    sfx.click();
+    if (this.busy) return;
     const held = this.heldItem();
     if (held) {
-      const ok = this.current.use ? this.current.use(held) : false;
-      if (ok === false) {
+      if (this.current) {
+        const ok = this.current.use ? this.current.use(held) : false;
+        if (ok !== false) { sfx.click(); return; }
+        const box = this.current.container && this.current.container();
+        if (box && this.hit) { this.dropItem(held, this.hit, box); return; }
+        sfx.click();
         this.ui.toast(USELESS[this.uselessIdx % USELESS.length], { duration: 2.5 });
         this.uselessIdx++;
+        return;
       }
+      if (this.hit) this.dropItem(held, this.hit);
       return;
     }
+    if (!this.current) return;
+    sfx.click();
     this.current.action();
   }
 
@@ -472,9 +655,7 @@ export class Game {
     if (this.state.fridgeOpen) {
       const d = this.camera.position.distanceTo(this.refs.fridge.front);
       frost = Math.max(0, Math.min(1, (1.5 - d) / 1.0)) * 0.9;
-      if (frost > 0.3) {
-        this.once('cold', () => this.ui.toast('Brrr… il fait froid là-dedans.', { duration: 2.5 }));
-      }
+      if (frost > 0.3) this.once('cold', () => this.ui.toast('Brrr… il fait froid là-dedans.', { duration: 2.5 }));
     }
     if (Math.abs(frost - (this.frost || 0)) > 0.01) {
       this.frost = frost;
@@ -489,16 +670,28 @@ export class Game {
     return this.selected ? this.inventory.find((i) => i.id === this.selected) || null : null;
   }
 
+  canCarry() {
+    return this.inventory.length < CONFIG.inventorySize;
+  }
+
+  handsFull() {
+    sfx.error();
+    this.ui.toast('Vos poches sont pleines : prenez un objet en main (1–0) et posez-le quelque part d’un clic avant d’en ramasser un autre.', { duration: 5, tone: 'warn' });
+  }
+
   addItem(item) {
     this.inventory.push(item);
     this.refreshHud();
   }
 
+  // Ajoute un objet à l'inventaire ; renvoie false si l'inventaire est plein
   pickUp(id, message, duration = 4) {
+    if (!this.canCarry()) { this.handsFull(); return false; }
     sfx.pickup();
     this.addItem(makeItem(id));
     if (message) this.ui.toast(message, { duration });
-    this.once('inventory-help', () => setTimeout(() => this.ui.toast('Astuce : maintenez la touche du chiffre affiché sur l’objet pour le regarder. Il passe alors en main pour l’utiliser.', { tone: 'hint', duration: 7 }), (duration + 0.3) * 1000));
+    this.once('inventory-help', () => setTimeout(() => this.ui.toast('Astuce : maintenez la touche du chiffre affiché sur un objet pour le regarder. Il passe alors en main : un clic l’utilise sur ce que vous visez, ou le pose.', { tone: 'hint', duration: 8 }), (duration + 0.3) * 1000));
+    return true;
   }
 
   removeItem(id) {
@@ -507,18 +700,64 @@ export class Game {
     this.refreshHud();
   }
 
-  // Maintenir 1-6 : on regarde l'objet, et il devient l'objet en main
+  // Poser l'objet en main là où l'on vise (sol, paillasse, bureau, tiroir ouvert…)
+  dropItem(item, hit, container = null) {
+    const m = makeItemMesh(item);
+    const p = hit.point.clone();
+    if (hit.normal.y < 0.6) { // mur ou face verticale : l'objet tombe au pied
+      p.addScaledVector(hit.normal, 0.12);
+      p.y = 0;
+    }
+    m.position.copy(p);
+    m.rotation.y = this.player.yaw + (Math.random() - 0.5) * 0.6;
+    this.scene.add(m);
+    if (container) container.attach(m);
+    this.inventory = this.inventory.filter((i) => i !== item);
+    if (this.selected === item.id) this.selected = null;
+    this.refreshHud();
+    sfx.plastic();
+    this.register(m, {
+      name: item.name,
+      label: () => `Ramasser : ${item.name}`,
+      action: () => {
+        if (!this.canCarry()) { this.handsFull(); return; }
+        m.removeFromParent();
+        this.interactables.delete(m);
+        sfx.pickup();
+        this.addItem(item);
+      },
+    });
+    this.once('drop-help', () => this.ui.toast(`Vous posez « ${item.name} ». Vous pourrez le reprendre d’un clic.`, { duration: 3 }));
+  }
+
+  // Maintenir 1-0 : on regarde l'objet, et il devient l'objet en main
   viewItem(index) {
     const it = this.inventory[index];
     if (!it) return false;
     this.selected = it.id;
+    this.viewingId = it.id;
     this.ui.showItem(it);
     this.refreshHud();
     return true;
   }
 
   stopViewing() {
+    this.viewingId = null;
     this.ui.hideItem();
+  }
+
+  // Clic pendant qu'on regarde un objet (ex. décrocher la lame scotchée)
+  viewClick() {
+    const it = this.inventory.find((i) => i.id === this.viewingId);
+    if (!it) return;
+    if (it.id === 'noteTom' && it.slide) {
+      if (!this.canCarry()) { this.handsFull(); return; }
+      it.slide = false;
+      sfx.cloth();
+      this.addItem(makeItem('lame'));
+      this.ui.showItem(it);
+      this.ui.toast('Vous décrochez délicatement la lame scotchée.', { duration: 3 });
+    }
   }
 
   deselect() {
@@ -530,7 +769,16 @@ export class Game {
   refreshHud() {
     this.ui.updateInventory(this.inventory, this.selected);
     this.ui.setHeld(this.heldItem());
-    this.ui.updateObjectives(this.state, this.equipped ? 'Fouillez le laboratoire. Maintenez 1–6 pour regarder vos objets.' : '');
+    this.ui.updateObjectives(this.state, this.objectiveText());
+  }
+
+  objectiveText() {
+    const s = this.state;
+    if (!this.equipped) return '';
+    if (s.exitOpen) return 'La porte est ouverte. Retirez vos gants avant de sortir !';
+    if (s.seq === 'done') return 'Le run est fini : imprimez le compte rendu et trouvez comment sortir.';
+    if (s.laptop !== 'done') return 'Terminer le compte rendu de gel de Tom (PC du bureau), puis son séquençage.';
+    return 'Finaliser le séquençage de Tom en suivant son protocole.';
   }
 
   // ======================================================================
@@ -556,13 +804,20 @@ export class Game {
 
   openDrawer(d) {
     sfx.cloth();
+    d.open = true;
     const z0 = d.group.position.z;
     return tween(0.45, (k) => { d.group.position.z = z0 + (d.home + 0.3 - z0) * k; }, { easing: ease.out });
   }
 
   closeDrawer(d) {
+    sfx.cloth();
+    d.open = false;
     const z0 = d.group.position.z;
     return tween(0.35, (k) => { d.group.position.z = z0 + (d.home - z0) * k; });
+  }
+
+  toggleDrawer(d) {
+    return d.open ? this.closeDrawer(d) : this.openDrawer(d);
   }
 
   checkEquipped() {
@@ -572,7 +827,8 @@ export class Game {
       this.equippedAt = this.time;
       setTimeout(() => {
         sfx.success();
-        this.ui.toast('Parfait, tenue réglementaire ! Vous pouvez entrer en zone de manip.', { speaker: LEROY, duration: 5, tone: 'success' });
+        this.ui.toast('Tenue réglementaire, parfait ! Tom m’a dit qu’il avait laissé deux choses en plan : le compte rendu de son gel, sur le PC du bureau, et son séquençage. Son protocole est rangé dans un placard de la paillasse centrale.',
+          { speaker: LEROY, duration: 10, tone: 'success' });
       }, 400);
     }
   }
@@ -755,7 +1011,7 @@ export class Game {
   }
 
   // ======================================================================
-  // Énigme 2 : PC bloqué, gel sous UV, impression
+  // Énigme 2 : PC (mot de passe), gel sous UV, impression
   // ======================================================================
   async useLaptop() {
     const { state, refs } = this;
@@ -767,10 +1023,9 @@ export class Game {
       refs.laptop.power.material.emissiveIntensity = 2;
       state.laptop = 'booting';
       await tween(2.2, (k) => drawLaptop(refs, `boot:${k.toFixed(2)}`), { easing: ease.linear });
-      state.laptop = 'blocked';
-      drawLaptop(refs, 'blocked');
-      sfx.error();
-      this.ui.toast('L’ordinateur s’allume… et reste bloqué sur un compte rendu : « Résultat manquant ».', { duration: 4.5 });
+      state.laptop = 'login';
+      drawLaptop(refs, 'login');
+      this.ui.toast('L’ordinateur démarre… sur la session verrouillée du Dr. P. Hemick. Il faut son mot de passe.', { duration: 4.5 });
       this.end();
       return;
     }
@@ -779,6 +1034,8 @@ export class Game {
       return;
     }
     const r = await this.ui.pc({
+      locked: !state.pcUnlocked,
+      checkPassword: (v) => v.trim().toUpperCase() === CONFIG.pcPassword,
       check: (v) => v === CONFIG.gelCode,
       onWrong: () => this.ui.dialog({
         speaker: LEROY, role: LEROY_ROLE,
@@ -786,24 +1043,34 @@ export class Game {
         button: 'Je vérifie',
       }),
     });
+    if (r === 'unlocked' || r === 'ok') {
+      if (!state.pcUnlocked) {
+        state.pcUnlocked = true;
+        state.laptop = 'blocked';
+        drawLaptop(refs, 'blocked');
+      }
+    }
+    if (r === 'unlocked') {
+      this.once('pc-blocked', () => this.ui.toast('La session s’ouvre… sur un compte rendu bloqué : il manque le résultat du gel d’électrophorèse.', { duration: 5 }));
+    }
     if (r === 'ok') {
       state.laptop = 'done';
       drawLaptop(refs, 'done');
-      await this.printReport();
+      await this.printSheet(refs.printer.sheet);
+      state.reportPrinted = true;
+      this.refreshHud();
       this.ui.toast('Bien lu ! Sur un gel de séquençage, les fragments les plus courts migrent le plus loin : on lit la séquence du bas vers le haut, de 5′ vers 3′.',
         { speaker: LEROY, tone: 'success', duration: 9 });
     }
   }
 
-  async printReport() {
-    const { sheet } = this.refs.printer;
-    this.state.reportPrinted = true;
+  async printSheet(sheet, lift = 0) {
     sheet.visible = true;
-    sheet.position.set(0, 0.11, 0.1);
+    sheet.position.set(0, 0.11 + lift, 0.1);
     for (let i = 0; i < 3; i++) setTimeout(() => sfx.cloth(), i * 450);
     await tween(1.6, (k) => {
       sheet.position.z = 0.1 + 0.14 * k;
-      sheet.position.y = 0.11 - 0.04 * k;
+      sheet.position.y = 0.11 + lift - 0.04 * k;
     }, { easing: ease.linear });
   }
 
@@ -825,7 +1092,7 @@ export class Game {
       this.once('uv-light', () => this.ui.toast('Les UV s’allument… mais avec toute cette lumière, on distingue à peine les bandes.', { duration: 5 }));
     }
     if (s.uvOn && this.lighting.dark) {
-      this.once('uv-dark', () => this.ui.toast('Dans le noir, les bandes du gel s’illuminent en orange. Le colorant fixé à l’ADN fluoresce sous UV. Heureusement, vous portez vos lunettes !',
+      this.once('uv-dark', () => this.ui.toast('Dans le noir, les bandes du gel s’illuminent en orange : le colorant fixé à l’ADN fluoresce sous UV. Heureusement, vous portez vos lunettes !',
         { speaker: LEROY, duration: 8 }));
     }
   }
@@ -833,7 +1100,8 @@ export class Game {
   updateGelGlow() {
     const t = this.refs.transillum;
     const on = this.state.uvOn, dark = this.lighting.dark;
-    t.bandMat.emissiveIntensity = on ? (dark ? 3.2 : 0.12) : 0;
+    t.bandMat.visible = on; // sans UV, l'ADN coloré est invisible
+    t.bandMat.emissiveIntensity = on ? (dark ? 3.2 : 0.15) : 0;
     t.plateMat.emissiveIntensity = on ? (dark ? 0.35 : 0.08) : 0;
     t.sw.material.emissiveIntensity = on ? 1.5 : 0;
     t.uvLight.intensity = on ? (dark ? 0.5 : 0.1) : 0;
@@ -857,7 +1125,6 @@ export class Game {
 
   async lookMicroscope() {
     await this.ui.microscope((canvas) => drawMalassez(canvas, CONFIG.cellCounts));
-    this.state.scopeSeen = true;
     this.once('scope', () => this.ui.toast('Une cellule de comptage quadrillée, avec des cellules rosées et d’autres mauve foncé…', { duration: 5 }));
   }
 
@@ -892,33 +1159,99 @@ export class Game {
 
   async storeRna() {
     const { refs } = this;
+    const fz = refs.freezer;
     this.begin();
     this.removeItem('arn');
     this.state.rnaStored = true;
-    const fz = refs.freezer;
+    // la porte s'ouvre, la lumière froide s'allume
     sfx.cloth();
-    await tween(0.6, (k) => { fz.door.rotation.y = 1.35 * k; }, { easing: ease.out });
-    this.ui.toast('Vous rangez l’ARN au -80 °C. Un nuage de froid s’échappe…', { duration: 3 });
-    await wait(0.4);
-    // un bloc de glace dégringole de l'étagère
-    const ice = fz.ice;
-    ice.visible = true;
-    ice.position.set(-0.1, 1.42, 0.2);
-    ice.rotation.set(0, 0, 0);
+    fz.coldLight.intensity = 0.9;
+    await tween(0.7, (k) => { fz.door.rotation.y = 1.6 * k; }, { easing: ease.out });
+    // le tube vole de la main jusqu'au portoir
+    const tube = fz.arnTube;
+    const target = tube.getWorldPosition(new THREE.Vector3());
+    const flying = tube.clone();
+    flying.visible = true;
+    this.scene.add(flying);
+    const from = this.pointInFront(0.45, 0.2);
+    await tween(0.8, (k) => {
+      flying.position.lerpVectors(from, target, k);
+      flying.position.y += Math.sin(k * Math.PI) * 0.12;
+    }, { easing: ease.inOut });
+    flying.removeFromParent();
+    tube.visible = true;
     sfx.plastic();
-    await tween(0.55, (k) => {
-      ice.position.y = 1.42 * (1 - k * k);
-      ice.position.z = 0.2 + 0.55 * k;
-      ice.rotation.x = k * 2.2;
-    }, { easing: ease.linear });
-    sfx.snap();
-    await tween(0.25, (k) => { ice.position.y = Math.sin(k * Math.PI) * 0.05; ice.rotation.x = 2.2 + k * 0.4; }, { easing: ease.linear });
-    ice.rotation.set(0, 0.3, 0);
-    ice.position.y = 0;
-    await tween(0.5, (k) => { fz.door.rotation.y = 1.35 * (1 - k); }, { easing: ease.in });
-    this.ui.toast('Un bloc de glace est tombé du congélateur ! Les ARN, eux, sont bien au froid : les RNases les dégradent vite à température ambiante.',
-      { speaker: LEROY, duration: 7 });
+    this.ui.toast('L’ARN est rangé dans son portoir, au -80 °C.', { duration: 3 });
+    // nuage de froid
+    this.frostPuff(fz);
+    await wait(0.6);
+    // le bloc de glace glisse du bord de l'étagère du haut… et tombe
+    const ice = fz.ice;
+    await tween(0.35, (k) => { ice.position.z = 0.22 + 0.12 * k; ice.rotation.x = 0.35 * k * k; }, { easing: ease.in });
+    await this.dropIce(ice, fz);
+    await tween(0.6, (k) => { fz.door.rotation.y = 1.6 * (1 - k); }, { easing: ease.inOut });
+    fz.coldLight.intensity = 0;
+    this.ui.toast('Un bloc de glace est tombé du congélateur ! Les ARN, eux, sont bien au froid : à température ambiante, les RNases les dégradent en quelques minutes.',
+      { speaker: LEROY, duration: 8 });
     this.end();
+  }
+
+  // Petite simulation de chute avec rebonds (repère local du congélateur)
+  dropIce(ice, fz) {
+    const half = 0.055;
+    const pos = ice.position;
+    const vel = new THREE.Vector3(0, -0.2, 0.9);
+    let spin = 7, rx = ice.rotation.x;
+    let bounces = 0;
+    let last = 0;
+    return tween(2.0, (k) => {
+      const t = k * 2.0;
+      let dt = t - last;
+      last = t;
+      while (dt > 0) {
+        const h = Math.min(dt, 1 / 120);
+        dt -= h;
+        vel.y -= 9.81 * h;
+        pos.addScaledVector(vel, h);
+        rx += spin * h;
+        if (pos.y < half && vel.y < 0) {
+          pos.y = half;
+          if (Math.abs(vel.y) > 0.6 && bounces < 3) {
+            vel.y = -vel.y * 0.32;
+            vel.z *= 0.55;
+            spin *= 0.45;
+            bounces++;
+            (bounces === 1 ? sfx.snap : sfx.plastic)();
+          } else {
+            vel.set(0, 0, vel.z * 0.85);
+            spin *= 0.8;
+          }
+        }
+      }
+      ice.rotation.x = rx;
+      if (k >= 1) {
+        // se pose à plat sur la face la plus proche
+        ice.rotation.x = Math.round(rx / (Math.PI / 2)) * (Math.PI / 2);
+        pos.y = half;
+      }
+    }, { easing: ease.linear });
+  }
+
+  frostPuff(fz) {
+    const mat = new THREE.MeshBasicMaterial({ color: 0xeaf6ff, transparent: true, opacity: 0.5, depthWrite: false });
+    for (let i = 0; i < 7; i++) {
+      const s = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 8), mat.clone());
+      s.position.set((Math.random() - 0.5) * 0.5, 0.4 + Math.random() * 1.2, fz.D / 2 + 0.05);
+      s.userData.noRay = true;
+      fz.group.add(s);
+      const v = new THREE.Vector3((Math.random() - 0.5) * 0.3, -0.25 - Math.random() * 0.2, 0.4 + Math.random() * 0.3);
+      const p0 = s.position.clone();
+      tween(1.8 + Math.random() * 0.6, (k) => {
+        s.position.copy(p0).addScaledVector(v, k);
+        s.scale.setScalar(1 + k * 2.2);
+        s.material.opacity = 0.45 * (1 - k);
+      }, { easing: ease.out, delay: i * 0.06 }).then(() => s.removeFromParent());
+    }
   }
 
   // ======================================================================
@@ -940,9 +1273,9 @@ export class Game {
   async meltIce() {
     this.begin();
     const s = this.refs.sink;
+    const item = this.inventory.find((i) => i.id === 'glace');
     this.removeItem('glace');
-    const ice = this.refs.freezer.ice.clone();
-    ice.visible = true;
+    const ice = makeItemMesh(item);
     ice.position.set(s.basinX, s.basinY + 0.004, 0.02);
     s.group.add(ice);
     s.water.visible = true;
@@ -959,16 +1292,164 @@ export class Game {
     await wait(0.4);
     ice.removeFromParent();
     this.state.iceMelted = true;
-    this.pickUp('petiteCle', null);
+    this.addItem(makeItem('petiteCle'));
+    sfx.pickup();
     this.ui.toast('La glace fond sous l’eau du robinet… et libère une petite clé argentée ! Reste à savoir ce qu’elle ouvre.', { tone: 'success', duration: 6 });
     this.end();
-    setTimeout(() => this.ui.dialog({
-      speaker: 'Fin de la version de test',
-      role: 'Lab Escape — énigmes 1 à 5',
-      avatar: '✓',
-      text: 'Bravo, vous êtes arrivé au bout des énigmes disponibles.<div class="learn">La suite (ce qu’ouvre la petite clé, et la sortie) arrive dans une prochaine version.</div>',
-      button: 'Continuer à explorer',
-    }), 2500);
+  }
+
+  // ======================================================================
+  // Incubateur, hotte (extraction), armoire
+  // ======================================================================
+  setIncubator(open) {
+    const inc = this.refs.incubator;
+    this.state.incubatorOpen = open;
+    sfx.cloth();
+    inc.warm.intensity = open ? 0.6 : 0;
+    const r0 = inc.door.rotation.y, r1 = open ? -1.9 : 0;
+    return tween(0.6, (k) => { inc.door.rotation.y = r0 + (r1 - r0) * k; }, { easing: ease.out });
+  }
+
+  placeInHood(what) {
+    const hood = this.refs.hood;
+    const item = makeItem(what === 'flask' ? 'flasque' : 'kit');
+    const m = makeItemMesh(item);
+    m.position.set(what === 'flask' ? -0.15 : 0.3, 0.92, 0.05);
+    m.rotation.y = what === 'flask' ? 0.2 : -0.3;
+    hood.add(m);
+    if (what === 'flask') this.hoodFlaskMesh = m;
+  }
+
+  async runExtraction() {
+    this.begin();
+    await wait(0.4);
+    await this.ui.ellipse('Lyse, fixation sur colonne, lavages, élution… 30 minutes plus tard', 1.6);
+    this.clockOffset += 30 * 60 * 1000;
+    this.state.extracted = true;
+    if (this.hoodFlaskMesh) this.hoodFlaskMesh.visible = false;
+    // le tube d'ADN apparaît sous la hotte
+    const tube = makeItemMesh(makeItem('adn'));
+    tube.position.set(0.05, 0.92, 0.1);
+    tube.scale.setScalar(1.6);
+    this.refs.hood.add(tube);
+    this.registerPickup(tube, 'adn', { label: 'Prendre le tube d’ADN', message: 'ADN purifié de l’échantillon T-07 : direction le robot.' });
+    this.end();
+    sfx.success();
+    this.ui.toast('ADN extrait ! Le tampon de lyse casse les membranes, l’ADN se fixe sur la silice de la colonne, les lavages retirent protéines et sels, puis l’eau libère l’ADN pur.',
+      { speaker: LEROY, tone: 'success', duration: 10 });
+  }
+
+  setCabinet(open) {
+    const cab = this.refs.cabinet;
+    this.state.cabinetOpen = open;
+    sfx.cloth();
+    const l0 = cab.left.rotation.y, r0 = cab.right.rotation.y;
+    const l1 = open ? 1.7 : 0, r1 = open ? -1.7 : 0;
+    return tween(0.7, (k) => {
+      cab.left.rotation.y = l0 + (l1 - l0) * k;
+      cab.right.rotation.y = r0 + (r1 - r0) * k;
+    }, { easing: ease.out });
+  }
+
+  // ======================================================================
+  // Robot de préparation des librairies
+  // ======================================================================
+  useRobot() {
+    const s = this.state;
+    if (s.robot === 'running') return;
+    if (s.robot === 'done') { this.ui.toast('La flowcell est prête dans le bac de sortie du robot.'); return; }
+    if (s.robotDna && s.robotEthanol) { this.runRobot(); return; }
+    sfx.error();
+    const missing = [!s.robotDna && 'l’échantillon d’ADN', !s.robotEthanol && 'de l’éthanol 80 %'].filter(Boolean);
+    this.ui.toast(`L’écran du robot indique qu’il manque ${missing.join(' et ')}.`, { duration: 4.5 });
+  }
+
+  async runRobot() {
+    const { refs, state } = this;
+    const r = refs.robot;
+    state.robot = 'running';
+    r.beaconMat.color.set(0x22c55e);
+    r.beaconMat.emissive.set(0x22c55e);
+    sfx.click();
+    // positions (x du chariot, z de la tête) au-dessus des éléments du plateau
+    const spots = {
+      tips: [-0.5, 0.0], sample: [0.05, 0.35], mag: [-0.22, 0.05], etoh: [0.32, 0.35], fc: [0.32, 0.05],
+    };
+    const steps = [
+      ['tips', 'Prise des cônes'], ['sample', 'Fragmentation de l’ADN'], ['mag', 'Ligation des adaptateurs'],
+      ['tips', 'Prise des cônes'], ['etoh', 'Lavage des billes à l’éthanol 80 %'], ['mag', 'Billes retenues par l’aimant'],
+      ['etoh', 'Second lavage'], ['mag', 'Élution des librairies'], ['fc', 'Chargement de la flowcell'],
+    ];
+    let i = 0;
+    for (const [spot, label] of steps) {
+      i++;
+      drawRobot(refs, { running: true, p: i / steps.length, step: label });
+      const [tx, tz] = spots[spot];
+      const x0 = r.carriage.position.x, z0 = r.head.position.z;
+      await tween(0.55, (k) => { r.carriage.position.x = x0 + (tx - x0) * k; r.head.position.z = z0 + (tz - z0) * k; });
+      await tween(0.22, (k) => { r.head.position.y = -0.2 * k; }, { easing: ease.out });
+      sfx.key();
+      await tween(0.22, (k) => { r.head.position.y = -0.2 * (1 - k); }, { easing: ease.in });
+    }
+    await tween(0.5, (k) => { r.carriage.position.x *= (1 - k); r.head.position.z *= (1 - k); });
+    state.robot = 'done';
+    r.flowcell.visible = true;
+    r.beaconMat.color.set(0xffffff);
+    r.beaconMat.emissive.set(0xffffff);
+    drawRobot(refs, { done: true });
+    sfx.success();
+    this.ui.toast('Librairies prêtes ! Le robot a fragmenté l’ADN, collé des adaptateurs, puis purifié sur billes magnétiques : un aimant retient les billes (et l’ADN) pendant que l’éthanol 80 % lave le reste.',
+      { speaker: LEROY, tone: 'success', duration: 10 });
+  }
+
+  // ======================================================================
+  // Séquenceur + ellipse temporelle
+  // ======================================================================
+  async runSequencer() {
+    const { refs, state } = this;
+    const sq = refs.sequencer;
+    this.begin();
+    sfx.cloth();
+    await tween(0.4, (k) => { sq.flap.rotation.x = 1.3 * k; }, { easing: ease.out });
+    sq.fcInside.visible = true;
+    sq.fcInside.position.z = 0.08;
+    await tween(0.5, (k) => { sq.fcInside.position.z = 0.08 - 0.14 * k; });
+    sq.fcInside.visible = false;
+    await tween(0.4, (k) => { sq.flap.rotation.x = 1.3 * (1 - k); }, { easing: ease.in });
+    sfx.snap();
+    state.seq = 'running';
+    sq.statusMat.color.set(0x22c55e);
+    sq.statusMat.emissive.set(0x22c55e);
+    await tween(1.6, (k) => drawSequencer(refs, 'running', k * 0.04), { easing: ease.linear });
+    this.ui.toast('Le run démarre. Il en a pour environ trois heures…', { duration: 3 });
+    await wait(1.2);
+    await this.ui.ellipse(`${['Une', 'Deux', 'Trois', 'Quatre'][CONFIG.runHours - 1] || CONFIG.runHours} heures plus tard…`, 2.2);
+    this.clockOffset += CONFIG.runHours * 3600 * 1000;
+    state.seq = 'done';
+    sq.statusMat.color.set(0xffffff);
+    sq.statusMat.emissive.set(0xffffff);
+    drawSequencer(refs, 'done');
+    this.refreshHud();
+    this.end();
+    sfx.success();
+    this.ui.toast('Le run est terminé ! L’écran du séquenceur affiche les résultats.', { tone: 'success', duration: 5 });
+  }
+
+  async useSequencer() {
+    const s = this.state;
+    if (s.seq === 'idle') { this.ui.toast('Séquenceur prêt. Il attend une flowcell chargée par le robot.'); return; }
+    if (s.seq === 'running') return;
+    await this.ui.sequencer({
+      onPrint: () => {
+        if (s.seqPrinted) return;
+        s.seqPrinted = true;
+        this.printSheet(this.refs.printer.seqSheet, 0.006).then(() => this.refreshHud());
+      },
+    });
+    if (s.seqPrinted) {
+      this.once('q30', () => this.ui.toast('Q30, c’est une base sur mille lue de travers. Plus de 90 % des bases au-dessus : un très bon run ! Votre compte rendu attend à l’imprimante du bureau.',
+        { speaker: LEROY, duration: 8 }));
+    }
   }
 
   // ======================================================================
@@ -979,13 +1460,16 @@ export class Game {
       this.ui.toast('Le voyant est vert : la porte est déverrouillée.');
       return;
     }
-    const ok = await this.ui.keypad({ title: 'Porte de sortie', length: CONFIG.exitCode.length, check: (c) => c === CONFIG.exitCode });
+    const ok = await this.ui.keypad({ title: 'Porte de sortie', length: CONFIG.exitCode.length, keys: KEYS_ROOM, check: (c) => c === CONFIG.exitCode });
     if (ok) {
       this.state.exitOpen = true;
       const led = this.refs.keypadLed.material;
       led.color.set(0x20ff60);
       led.emissive.set(0x20ff60);
-      this.ui.toast('Clic ! La porte de sortie est déverrouillée.', { tone: 'success' });
+      this.refreshHud();
+      this.ui.toast(this.state.gloves
+        ? 'Clic ! La porte est déverrouillée. Mais pas de gants sur la poignée : jetez-les d’abord.'
+        : 'Clic ! La porte de sortie est déverrouillée.', { tone: 'success', duration: 5 });
     }
   }
 

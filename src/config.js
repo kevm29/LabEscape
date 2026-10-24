@@ -7,8 +7,15 @@ export const CONFIG = {
   // Énigme 3 → 4 : comptage des cellules vivantes = code du frigo +4 °C
   fridgeCode: '7764',
   cellCounts: { live: [7, 7, 6, 4], dead: [3, 4, 2, 5] },
-  // Porte de sortie (énigme finale à écrire)
-  exitCode: '7341',
+  // Mot de passe de la session du PC (carnet de Paul)
+  pcPassword: 'LB_026',
+  // Numéro de la salle = code de la porte de sortie (affiche : « code des portes = n° de la salle »)
+  roomNumber: '542A',
+  exitCode: '542A',
+  // Durée simulée du run de séquençage (ellipse), en heures
+  runHours: 3,
+  // Taille max de l'inventaire (touches 1 à 0)
+  inventorySize: 10,
   // Index de la blouse du Dr. P. Hemick (celle qui a la clé)
   keyCoat: 0,
   // Délai (s) avant l'indice "regardez vos poches" une fois équipé

@@ -76,12 +76,13 @@ export class UI {
   }
 
   // Digicode à touches (souris ou clavier) : resolve(true) si le bon code est saisi
-  keypad({ title = 'Digicode', length = 4, check }) {
+  keypad({ title = 'Digicode', length = 4, check, keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', 'OK'] }) {
     return new Promise((resolve) => {
       this.openModal();
       const el = $('keypad');
       const screen = $('keypad-screen');
       $('keypad-title').textContent = title;
+      $('keypad-keys').innerHTML = keys.map((k) => `<button data-k="${k}">${k}</button>`).join('');
       el.classList.add('show');
       let code = '';
       const render = (state = '') => {
@@ -92,7 +93,7 @@ export class UI {
       let locked = false;
       const press = (k) => {
         if (locked) return;
-        if (k === 'C') { code = ''; sfx.key(); render(); return; }
+        if (k === 'C' && keys.includes('OK')) { code = ''; sfx.key(); render(); return; }
         if (k === 'OK') { submit(); return; }
         if (code.length < length) { code += k; sfx.key(); render(); }
         if (code.length === length) setTimeout(submit, 180);
@@ -111,6 +112,7 @@ export class UI {
       const onClick = (e) => { const k = e.target.closest('button')?.dataset.k; if (k) press(k); };
       const onKey = (e) => {
         if (/^Digit\d$|^Numpad\d$/.test(e.code)) press(e.code.slice(-1));
+        else if (e.key && e.key.length === 1 && /[a-z]/i.test(e.key) && keys.includes(e.key.toUpperCase())) press(e.key.toUpperCase());
         else if (e.code === 'Backspace') { code = code.slice(0, -1); render(); }
         else if (e.code === 'Enter' || e.code === 'NumpadEnter') submit();
         else if (e.code === 'Escape') finish(false);
@@ -190,10 +192,33 @@ export class UI {
 
   // Ordinateur portable : fenêtre bloquée sur le résultat manquant.
   // check(value) -> 'ok' | 'wrong' ; onWrong() affiche la remarque du Dr. Leroy.
-  pc({ check, onWrong }) {
+  pc({ check, onWrong, locked = false, checkPassword = () => true }) {
     return new Promise((resolve) => {
       this.openModal();
       const el = $('pc');
+      const login = $('pc-login');
+      const win = $('pc-window');
+      const pass = $('pc-pass');
+      const passErr = $('pc-pass-err');
+      let isLocked = locked;
+      const showStage = () => {
+        login.hidden = !isLocked;
+        win.hidden = isLocked;
+        setTimeout(() => (isLocked ? pass : input).focus(), 50);
+      };
+      pass.value = '';
+      passErr.textContent = '';
+      const tryLogin = () => {
+        if (checkPassword(pass.value)) {
+          sfx.success();
+          isLocked = false;
+          showStage();
+        } else {
+          sfx.error();
+          passErr.textContent = 'Mot de passe incorrect.';
+          pass.select();
+        }
+      };
       const input = $('pc-input');
       const popup = $('pc-popup');
       const status = $('pc-status');
@@ -203,7 +228,7 @@ export class UI {
       status.className = '';
       input.value = '';
       input.disabled = false;
-      setTimeout(() => input.focus(), 50);
+      showStage();
       let busy = false;
       const submit = async () => {
         if (busy) return;
@@ -231,7 +256,8 @@ export class UI {
         if ($('dialog').classList.contains('show')) return;
         if (e.code === 'Enter' || e.code === 'NumpadEnter') {
           e.preventDefault();
-          if (!popup.hidden) hidePopup(); else submit();
+          if (isLocked) tryLogin();
+          else if (!popup.hidden) hidePopup(); else submit();
         } else if (e.code === 'Escape') {
           if (!popup.hidden) hidePopup(); else finish('left');
         }
@@ -241,21 +267,65 @@ export class UI {
       const onLeave = () => finish('left');
       const finish = (r) => {
         el.classList.remove('show');
+        $('pc-login-btn').removeEventListener('click', tryLogin);
         $('pc-save').removeEventListener('click', onSave);
         $('pc-x').removeEventListener('click', onX);
         $('pc-popup-ok').removeEventListener('click', hidePopup);
         $('pc-leave').removeEventListener('click', onLeave);
         removeEventListener('keydown', onKey);
         input.blur();
+        pass.blur();
         this.closeModal();
-        resolve(r);
+        resolve(r === 'left' && !isLocked && locked ? 'unlocked' : r);
       };
+      $('pc-login-btn').addEventListener('click', tryLogin);
       $('pc-save').addEventListener('click', onSave);
       $('pc-x').addEventListener('click', onX);
       $('pc-popup-ok').addEventListener('click', hidePopup);
       $('pc-leave').addEventListener('click', onLeave);
       addEventListener('keydown', onKey);
     });
+  }
+
+  // Écran du séquenceur : résultats + impression
+  sequencer({ onPrint }) {
+    return new Promise((resolve) => {
+      this.openModal();
+      const el = $('seq');
+      el.classList.add('show');
+      const btn = $('seq-print');
+      const status = $('seq-status');
+      status.textContent = '';
+      btn.disabled = false;
+      const print = () => {
+        btn.disabled = true;
+        sfx.click();
+        status.textContent = 'Impression envoyée à l’imprimante du bureau.';
+        onPrint();
+      };
+      const onKey = (e) => { if (e.code === 'Escape') finish(); };
+      const finish = () => {
+        el.classList.remove('show');
+        btn.removeEventListener('click', print);
+        $('seq-close').removeEventListener('click', finish);
+        removeEventListener('keydown', onKey);
+        this.closeModal();
+        resolve();
+      };
+      btn.addEventListener('click', print);
+      $('seq-close').addEventListener('click', finish);
+      addEventListener('keydown', onKey);
+    });
+  }
+
+  // Ellipse temporelle : écran noir + texte
+  async ellipse(text, hold = 2.2) {
+    const el = $('ellipse');
+    $('ellipse-text').textContent = text;
+    el.classList.add('show');
+    await new Promise((r) => setTimeout(r, 900 + hold * 1000));
+    el.classList.remove('show');
+    await new Promise((r) => setTimeout(r, 900));
   }
 
   // Vue dans l'oculaire du microscope
@@ -282,7 +352,7 @@ export class UI {
   showItem(item) {
     const el = $('viewer');
     $('viewer-title').textContent = item.name;
-    $('viewer-body').innerHTML = item.view();
+    $('viewer-body').innerHTML = item.view(item);
     el.classList.add('show');
   }
 
@@ -293,7 +363,7 @@ export class UI {
   setHeld(item) {
     const el = $('held');
     if (!item) { el.classList.remove('show'); return; }
-    el.innerHTML = `<span class="ico">${item.icon}</span><span>En main : <b>${item.name}</b></span><span class="hint"><kbd>Clic droit</kbd> ranger</span>`;
+    el.innerHTML = `<span class="ico">${item.icon}</span><span>En main : <b>${item.name}</b></span><span class="hint"><kbd>Clic</kbd> utiliser / poser · <kbd>Clic droit</kbd> ranger</span>`;
     el.classList.add('show');
   }
 
@@ -320,7 +390,7 @@ export class UI {
     items.forEach((it, i) => {
       const slot = document.createElement('div');
       slot.className = 'slot filled' + (it.id === selectedId ? ' selected' : '');
-      slot.innerHTML = `<span class="num">${i + 1}</span><span class="ico">${it.icon}</span><span class="name">${it.name}</span>`;
+      slot.innerHTML = `<span class="num">${(i + 1) % 10}</span><span class="ico">${it.icon}</span><span class="name">${it.name}</span>`;
       el.appendChild(slot);
     });
   }

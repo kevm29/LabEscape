@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../lib/three/addons/RoomEnvironment.js';
 import { buildRoom, updateClock } from './room.js';
 import { buildProps } from './props.js';
+import { buildMachines } from './machines.js';
 import { createLighting } from './lighting.js';
 import { Player } from './player.js';
 import { Game } from './game.js';
@@ -30,6 +31,7 @@ const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.03, 6
 const lighting = createLighting(scene);
 const { colliders, refs } = buildRoom(scene);
 buildProps(scene, refs, colliders);
+buildMachines(scene, refs, colliders);
 // l'environnement (reflets) est volontairement atténué pour garder du contraste
 scene.traverse((o) => {
   if (!o.isMesh) return;
@@ -64,8 +66,8 @@ document.getElementById('start-btn').addEventListener('click', () => {
   document.body.classList.add('playing');
   lock();
   setTimeout(() => {
-    ui.toast('Bienvenue au labo ! Avant toute manip : blouse, lunettes et gants. Tout est au vestiaire, sur votre gauche.',
-      { speaker: 'Dr. Leroy', duration: 7 });
+    ui.toast('Bienvenue, et merci de remplacer Tom au pied levé ! Avant toute manip : blouse, lunettes et gants. Tout est au vestiaire, sur votre gauche.',
+      { speaker: 'Dr. Leroy', duration: 8 });
   }, 900);
 });
 
@@ -93,6 +95,7 @@ document.addEventListener('pointerlockerror', () => {
 
 canvas.addEventListener('mousedown', (e) => {
   if (!started || ui.modalOpen) return;
+  if (viewing && e.button === 0) { game.viewClick(); return; }
   if (player.dragMode) {
     if (e.button === 2) { game.deselect(); return; }
     downAt = [e.clientX, e.clientY];
@@ -108,12 +111,21 @@ canvas.addEventListener('mouseup', (e) => {
   downAt = null;
 });
 addEventListener('keydown', (e) => {
-  if (!started || ui.modalOpen) return;
+  if (!started) return;
+  const typing = /^(INPUT|TEXTAREA)$/.test(e.target?.tagName);
+  if (!typing) {
+    // empêche les raccourcis du navigateur pendant le jeu (recherche rapide de Firefox avec ' ou /,
+    // enregistrer / favoris avec Ctrl+S / Ctrl+D…)
+    if (/^(Digit|Numpad)\d$|^(Quote|Slash|Backquote|Tab)$/.test(e.code)) e.preventDefault();
+    if ((e.ctrlKey || e.metaKey) && /^Key[SDFPGHJKLUOEB]$/.test(e.code)) e.preventDefault();
+  }
+  if (ui.modalOpen) return;
   if (e.code === 'KeyE' && player.enabled) game.interact();
-  // inventaire : maintenir 1-6 pour regarder un objet (il passe en main)
-  const m = /^(?:Digit|Numpad)([1-6])$/.exec(e.code);
+  // inventaire : maintenir 1…9, 0 pour regarder un objet (il passe en main)
+  const m = /^(?:Digit|Numpad)([0-9])$/.exec(e.code);
   if (m && !e.repeat) {
-    if (game.viewItem(Number(m[1]) - 1)) viewing = e.code;
+    const idx = m[1] === '0' ? 9 : Number(m[1]) - 1;
+    if (game.viewItem(idx)) viewing = e.code;
   }
 });
 let viewing = null;
@@ -160,7 +172,7 @@ renderer.setAnimationLoop(() => {
   updateTweens(dt);
   player.update(dt);
   game.update(dt);
-  updateClock(refs.clock, new Date());
+  updateClock(refs.clock, new Date(Date.now() + game.clockOffset));
   renderer.render(scene, camera);
 });
 
