@@ -75,7 +75,7 @@ function buildSequencer(scene, refs, colliders) {
   const scr = screen(640, 400);
   plane(m, 0.5, 0.3125, scr.mat, 0.3, 0.64, 0.367);
   // nom de l'appareil
-  plane(m, 0.34, 0.05, std({ map: labelTex('SÉQUENCEUR NX-7', { bg: '#23272c', fg: '#e9eef2', size: 50 }) }), -0.38, 0.86, 0.366);
+  plane(m, 0.34, 0.05, std({ map: labelTex('SÉQUENCEUR NX-7', { bg: '#23272c', fg: '#e9eef2', size: 50 }) }), -0.3, 0.84, 0.367);
   // trappe de la flowcell
   const bay = new THREE.Group();
   bay.position.set(-0.36, 0.48, 0.366);
@@ -386,7 +386,7 @@ function buildEmergencyKey(refs) {
   k.position.set(-0.45, 0.6, -0.425 + 0.042);
   hood.add(k);
   const key = makeKey(0xaab4bd);
-  key.scale.setScalar(1.8);
+  key.scale.setScalar(2.4);
   key.rotation.z = 0.5;
   k.add(key);
   const tape = std({ color: 0xe8dcb0, roughness: 0.8, transparent: true, opacity: 0.8, side: THREE.DoubleSide });

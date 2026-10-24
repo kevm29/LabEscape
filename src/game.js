@@ -1200,7 +1200,7 @@ export class Game {
   dropIce(ice, fz) {
     const half = 0.055;
     const pos = ice.position;
-    const vel = new THREE.Vector3(0, -0.2, 0.9);
+    const vel = new THREE.Vector3(0, -0.2, 0.55);
     let spin = 7, rx = ice.rotation.x;
     let bounces = 0;
     let last = 0;
