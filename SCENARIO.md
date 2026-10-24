@@ -42,4 +42,4 @@ Tom, le doctorant, est tombé malade avant d'avoir fini ses manips. Le joueur es
 - Les vitres d'une machine (PipetBot, hotte) comptent comme la machine : on ne peut plus « poser » un objet derrière par erreur.
 
 ## Pistes ouvertes
-- Rien de bloquant. Idées : indices gradués du Dr. Leroy si on bloque longtemps, sauvegarde de la progression.
+- Rien de bloquant. Idées : indices gradués de M. Sé si on bloque longtemps, sauvegarde de la progression.
