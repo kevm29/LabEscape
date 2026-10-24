@@ -20,7 +20,7 @@ Tom, le doctorant, est tombé malade avant d'avoir fini ses manips. Le joueur es
 12. **Incubateur CO₂** (petite clé) → **flasque T-07** (les flasques T-05 et T-06 sont des leurres).
 13. **Hotte (PSM)** : flasque + kit → extraction (ellipse « 30 minutes plus tard ») → **tube d'ADN**.
 14. **Clé de secours** scotchée au fond, **sous la paillasse de la hotte**, près de la DASRI : visible seulement **accroupi (Ctrl)**.
-15. **Armoire de sécurité** (jaune, à gauche en arrivant) : tous les solvants se prennent (acétone, isopropanol, méthanol, xylène, **éthanol 80 %**) ; seul l'éthanol sert. Un solvant sur une machine → « Ce réactif n'est pas adapté. ». Au 2ᵉ essai sur l'armoire fermée, M. Sé donne un indice sur le double de la clé.
+15. **Armoire de sécurité** (jaune, à gauche en arrivant) : tous les solvants se prennent (acétone, isopropanol, méthanol, xylène, **éthanol 80 %**) ; seul l'éthanol sert. Un solvant sur une machine → « Ce réactif n'est pas adapté. ».
 16. **PipetBot** (robot vitré) : écran « Cônes ✓ / Échantillon / Réactif ». ADN + éthanol → démarrage automatique → préparation des librairies → **flowcell**.
 17. **Séquenceur NX-7** : flowcell → l'écran demande le **n° d'échantillon** → saisir **T-07** → ellipse « Trois heures plus tard… » (l'horloge avance) → « Séquençage terminé » + **Imprimer le compte-rendu du run**.
 18. **Rapport de run** imprimé au bureau : « Séquenceur NX-7 — **Labo 542A** ».

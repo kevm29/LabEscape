@@ -63,7 +63,6 @@ export class Game {
       seqPrinted: false,
       questsKnown: false,
       mugGone: false,
-      cabinetTries: 0,
     };
     this.flags = new Set(); // messages déjà affichés une fois
     this.inventory = [];
@@ -460,9 +459,7 @@ export class Game {
       action: () => {
         if (!state.cabinetUnlocked) {
           sfx.error();
-          state.cabinetTries++;
-          if (state.cabinetTries < 2) this.ui.toast('Armoire pour produits inflammables. Fermée à clé.');
-          else this.ui.toast('La clé de l’armoire ? Tom en gardait un double… scotché sous une paillasse, il me semble. Il faudra vous baisser (Ctrl) pour le trouver.', { speaker: LEROY, duration: 7 });
+          this.ui.toast('Armoire pour produits inflammables. Fermée à clé.');
           return;
         }
         this.setCabinet(!state.cabinetOpen);
