@@ -76,6 +76,9 @@
   #obj-status { padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; line-height: 1.45; }
   #objectives li::before { content: ''; width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid rgba(255,255,255,0.35); flex: none; }
   #objectives li.done { color: var(--muted); text-decoration: line-through; }
+  #objectives li.sub { padding-left: 24px; font-size: 13px; }
+  #objectives li.sub::before { width: 11px; height: 11px; }
+  #objectives li.new { animation: pop .4s ease; }
   #objectives li.done::before { background: var(--ok); border-color: var(--ok); box-shadow: inset 0 0 0 3px #10251a; }
   .magnet-icon { width: 15px; height: 15px; flex: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M8 4h5v13a3 3 0 0 0 6 0V4h5v13a8 8 0 0 1-16 0z' fill='%23e04444'/%3E%3Crect x='8' y='4' width='5' height='5' fill='%23d0d4d8'/%3E%3Crect x='19' y='4' width='5' height='5' fill='%23d0d4d8'/%3E%3C/svg%3E") center/contain no-repeat; }
 
@@ -91,7 +94,8 @@
 
   #held { left: 50%; bottom: 88px; transform: translateX(-50%); display: none; align-items: center; gap: 10px; padding: 6px 12px; border-radius: 10px; background: var(--panel); border: 1px solid rgba(242,194,0,0.45); font-size: 13px; }
   #held.show { display: flex; }
-  #held .hint { color: var(--muted); font-size: 11px; }
+  #held .hint { color: var(--muted); font-size: 11px; white-space: nowrap; }
+  #held > span:nth-child(2) { white-space: nowrap; }
   #held .ico svg { width: 22px; height: 22px; display: block; }
 
   #frost { position: fixed; inset: 0; pointer-events: none; z-index: 6; opacity: 0;
@@ -107,7 +111,7 @@
   .paper { background: #fbfaf4; color: #1f2933; border-radius: 4px; padding: 18px 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); position: relative; font-size: 13px; line-height: 1.5; }
   .paper p { color: #1f2933 !important; margin: 6px 0 !important; }
   .paper .hand { font-family: 'Segoe Print', 'Comic Sans MS', cursive; color: #1e3a8a !important; }
-  .paper .big { font-size: 22px; text-align: center; margin-top: 22px !important; }
+  .paper .big { font-size: 19px; text-align: center; margin-top: 6px !important; }
   .paper .small { font-size: 12px; opacity: 0.75; }
   .paper header { border-bottom: 2px solid #1e5bb8; padding-bottom: 6px; font-size: 12px; }
   .paper .meta { font-size: 11px; color: #5a6670; margin: 6px 0; }
@@ -117,9 +121,19 @@
   .paper td:first-child { color: #5a6670; width: 40%; }
   .paper footer { margin-top: 14px; font-size: 12px; text-align: right; }
   .paper.crumpled { background: #f1eee3; transform: rotate(-1.5deg); background-image: linear-gradient(115deg, transparent 40%, rgba(0,0,0,0.04) 41%, transparent 43%), linear-gradient(30deg, transparent 60%, rgba(0,0,0,0.05) 61%, transparent 63%); }
-  .paper.note { min-height: 190px; }
-  .paper .postit { position: absolute; top: 12px; right: 12px; width: 92px; padding: 8px; background: #fff27a; transform: rotate(4deg); box-shadow: 0 3px 8px rgba(0,0,0,0.25); font: 13px 'Segoe Print', 'Comic Sans MS', cursive; color: #1f2933; line-height: 1.35; }
-  .paper .taped-slide { margin: 34px auto 0; width: 62%; height: 34px; border-radius: 3px; background: linear-gradient(90deg, #f3f3f3 0 20%, rgba(214,238,250,0.9) 20%); border: 1px solid #9fc3d6; position: relative; }
+  .paper.note { width: 62%; margin: 0 auto; padding: 14px 16px 12px; min-height: 0; }
+  .paper.report { aspect-ratio: 21 / 29.7; width: min(100%, calc(66vh * 0.707)); margin: 0 auto; overflow: hidden; font-size: 12px; }
+  .paper.notebook { background: #fbfaf4 repeating-linear-gradient(transparent 0 23px, rgba(30,91,184,0.15) 23px 24px); border-left: 10px solid #8a2d2d; padding-top: 16px; }
+  .paper.protocol { background: #fff; border-left: 6px solid #1e5bb8; }
+  .paper.crumpled { width: 82%; margin: 0 auto; clip-path: polygon(2% 4%, 18% 0, 41% 3%, 63% 0, 86% 4%, 100% 1%, 97% 24%, 100% 47%, 96% 71%, 99% 96%, 76% 100%, 52% 96%, 29% 100%, 6% 97%, 0 74%, 3% 49%, 0 26%);
+    background: #efebde radial-gradient(ellipse at 30% 40%, rgba(255,255,255,0.5), transparent 40%), #efebde;
+    background-image: linear-gradient(115deg, transparent 32%, rgba(0,0,0,0.07) 33%, transparent 35%), linear-gradient(28deg, transparent 58%, rgba(0,0,0,0.08) 59%, transparent 61%), linear-gradient(160deg, transparent 70%, rgba(0,0,0,0.06) 71%, transparent 73%), linear-gradient(75deg, transparent 20%, rgba(0,0,0,0.05) 21%, transparent 23%); }
+  .paper .slide-zone { position: relative; width: 78%; height: 30px; margin: 4px auto 6px; }
+  .paper .slide-zone .tape { position: absolute; top: -2px; width: 22px; height: 34px; background: rgba(240,230,170,0.85); }
+  .paper .slide-zone .tape.l { left: 4%; transform: rotate(-4deg); }
+  .paper .slide-zone .tape.r { right: 4%; left: auto; transform: rotate(5deg); }
+  .paper .postit { float: right; margin: -4px -6px 8px 12px; position: relative; width: 92px; padding: 8px; background: #fff27a; transform: rotate(4deg); box-shadow: 0 3px 8px rgba(0,0,0,0.25); font: 13px 'Segoe Print', 'Comic Sans MS', cursive; color: #1f2933; line-height: 1.35; }
+  .paper .taped-slide { position: absolute; inset: 2px 0; width: 100%; height: 26px; border-radius: 3px; background: linear-gradient(90deg, #f3f3f3 0 20%, rgba(214,238,250,0.9) 20%); border: 1px solid #9fc3d6; position: relative; }
   .paper .taped-slide::after { content: ''; position: absolute; left: 58%; top: 8px; width: 16px; height: 16px; border-radius: 50%; background: rgba(217,163,198,0.8); }
   .paper .tape-mark { margin: 34px auto 0; width: 62%; height: 34px; border: 1px dashed #c9c3b0; border-radius: 3px; }
   .paper .steps { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 7px; font-size: 12.5px; }
@@ -139,7 +153,11 @@
   #seq .stat b { display: block; font: 700 22px var(--mono); color: #e9eef2; font-variant-numeric: tabular-nums; }
   #seq .stat span { font-size: 12px; color: var(--muted); }
   #seq .ok { margin-top: 12px; color: var(--ok); font-weight: 600; }
-  #seq-print { background: #14b8a6; color: #04241f; }
+  #seq-print, #seq-start { background: #14b8a6; color: #04241f; }
+  #seq-sample { display: block; width: 100%; margin-top: 6px; font: 600 20px var(--mono); letter-spacing: 0.08em; padding: 9px 12px; border-radius: 8px; border: 1px solid rgba(20,184,166,0.5); background: #0c1520; color: #e9eef2; text-transform: uppercase; }
+  #seq-sample:focus { outline: 3px solid rgba(20,184,166,0.4); }
+  #seq-err { color: #fca5a5; font-size: 13px; min-height: 1.2em; margin-top: 6px; }
+  #seq-setup[hidden], #seq-results[hidden] { display: none; }
   #seq-print:disabled { opacity: 0.55; cursor: default; }
   #seq-status { margin-top: 10px; font-size: 13px; color: var(--muted); min-height: 1em; }
 
@@ -152,8 +170,7 @@
   #pc-pass:focus { outline: 3px solid rgba(63,130,230,0.5); }
   #pc-login-btn { padding: 8px 14px; border: 0; border-radius: 6px; background: #1e5bb8; color: #fff; font: 600 14px var(--font); cursor: pointer; }
   #pc-pass-err { color: #fca5a5; font-size: 13px; min-height: 1em; }
-  .paper .tape { position: absolute; top: 18px; left: 22%; width: 60px; height: 20px; background: rgba(240,230,170,0.85); transform: rotate(-4deg); }
-  .paper .tape.r { left: auto; right: 22%; transform: rotate(5deg); }
+
 
   /* ordinateur portable */
   #pc .screen-frame { width: min(620px, calc(100vw - 32px)); border-radius: 16px; padding: 14px; background: #2b2f34; border: 1px solid #444b52; box-shadow: 0 30px 80px rgba(0,0,0,0.55); animation: pop .22s ease; }
@@ -290,12 +307,7 @@
 
 <div id="objectives" class="hud">
   <h3>Objectif</h3>
-  <div id="obj-title">S’équiper avant la manip</div>
-  <ul>
-    <li id="obj-coat">Blouse blanche</li>
-    <li id="obj-goggles">Lunettes de protection</li>
-    <li id="obj-gloves">Gants en nitrile</li>
-  </ul>
+  <ul id="obj-list"></ul>
   <div id="obj-status" hidden></div>
 </div>
 
@@ -305,7 +317,7 @@
 <div id="dialog" class="modal">
   <div class="card">
     <div class="who">
-      <div class="avatar" id="dialog-avatar">DL</div>
+      <div class="avatar" id="dialog-avatar">SS</div>
       <div><div id="dialog-speaker"></div><div id="dialog-role"></div></div>
     </div>
     <div id="dialog-text"></div>
@@ -351,7 +363,7 @@
         <div class="window" id="pc-window">
           <div class="titlebar"><span>LabNote — Compte rendu d’analyse</span><button id="pc-x" aria-label="Fermer la fenêtre">×</button></div>
           <div class="wbody">
-            <div class="row">Échantillon : <b>T-07</b> · Analyse : <b>séquençage (gel 4 pistes)</b></div>
+            <div class="row">Patient : <b>T-08</b> · Analyse : <b>électrophorèse (gel 4 pistes)</b></div>
             <div class="row">Opérateur : <b>T. Attot</b> · Validation : <b>Dr. P. Hemick</b></div>
             <label for="pc-input">Résultat du gel d’électrophorèse :</label>
             <input id="pc-input" type="text" maxlength="12" autocomplete="off" spellcheck="false" placeholder="……">
@@ -381,16 +393,25 @@
 
 <div id="seq" class="modal">
   <div class="card">
-    <div class="seq-head"><strong>NX-7 · RUN T-07</strong><button id="seq-close" class="x-btn" aria-label="Fermer">×</button></div>
+    <div class="seq-head"><strong id="seq-title">NX-7</strong><button id="seq-close" class="x-btn" aria-label="Fermer">×</button></div>
+    <div id="seq-setup">
+      <p style="margin:0 0 10px;color:var(--muted)">Flowcell détectée. Saisissez le numéro d’échantillon pour lancer le run.</p>
+      <label for="seq-sample" style="font-weight:600;font-size:14px">N° d’échantillon</label>
+      <input id="seq-sample" type="text" maxlength="12" autocomplete="off" spellcheck="false" placeholder="ex. T-00">
+      <div id="seq-err" role="status"></div>
+      <button id="seq-start" class="primary">Lancer le run</button>
+    </div>
+    <div id="seq-results">
     <div class="stats">
       <div class="stat"><b>412 M</b><span>Lectures</span></div>
       <div class="stat"><b>93,4 %</b><span>Bases ≥ Q30</span></div>
       <div class="stat"><b>1 840</b><span>Clusters (K/mm²)</span></div>
       <div class="stat"><b>38 ×</b><span>Couverture moyenne</span></div>
     </div>
-    <div class="ok">✓ Run terminé — statut PASS</div>
-    <button id="seq-print" class="primary">Imprimer le compte rendu</button>
+    <div class="ok">✓ Séquençage terminé — statut PASS</div>
+    <button id="seq-print" class="primary">Imprimer le compte-rendu du run</button>
     <div id="seq-status" role="status"></div>
+    </div>
   </div>
 </div>
 
@@ -418,7 +439,7 @@
   <div class="start-card">
     <div class="badge">☣ NSB2 — LABORATOIRE</div>
     <h1>Lab <span>Escape</span></h1>
-    <p class="lede">Tom, le doctorant de l’équipe, est tombé malade avant d’avoir fini ses manips. Vous êtes le stagiaire du moment : le Dr. Leroy vous a ouvert le labo pour finaliser ses analyses avant le week-end. D’après Tom, « tout est accessible, d’une façon ou d’une autre ».</p>
+    <p class="lede">Tom, le doctorant de l’équipe, est tombé malade avant d’avoir fini ses manips. Vous êtes le stagiaire du moment : M. Sé, l’agent de sécurité, vous a ouvert le labo pour finaliser ses analyses avant le week-end. D’après Tom, « tout est accessible, d’une façon ou d’une autre ».</p>
     <div class="controls">
       <div class="keys"><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>↑</kbd><kbd>↓</kbd></div><div>Se déplacer</div>
       <div class="keys"><kbd>Souris</kbd></div><div>Regarder autour</div>

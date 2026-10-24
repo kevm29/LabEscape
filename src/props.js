@@ -108,19 +108,22 @@ function buildDesk(scene, refs, colliders) {
   box(carnet, 0.14, 0.004, 0.2, paper, 0.004, 0.008, 0);
   refs.carnet = carnet;
 
+  // petit papier (≈ 10 × 8 cm) avec la lame scotchée par ses deux extrémités
   const note = new THREE.Group();
   note.position.set(0, -0.075, -0.2);
+  note.rotation.y = 0.15;
   refs.drawers.tom.group.add(note);
-  plane(note, 0.15, 0.2, std({
-    map: canvasTex(256, 340, (g) => {
-      g.fillStyle = '#fbfaf4'; g.fillRect(0, 0, 256, 340);
-      g.fillStyle = 'rgba(240,230,170,0.85)'; g.fillRect(40, 90, 70, 26); g.fillRect(150, 90, 70, 26);
-      g.fillStyle = '#1e3a8a'; g.font = 'bold 28px "Segoe Print", cursive'; g.textAlign = 'center';
-      g.fillText('Coïncidence !', 128, 210); g.font = '22px "Segoe Print", cursive'; g.fillText('Pile le code du frigo !', 128, 250);
+  plane(note, 0.1, 0.08, std({
+    map: canvasTex(256, 205, (g) => {
+      g.fillStyle = '#fbfaf4'; g.fillRect(0, 0, 256, 205);
+      g.fillStyle = '#1e3a8a'; g.font = 'bold 24px "Segoe Print", cursive'; g.textAlign = 'center';
+      g.fillText('Coïncidence !', 128, 140); g.font = '17px "Segoe Print", cursive'; g.fillText('Pile le code du frigo !', 128, 170);
     }),
   }), 0, 0, 0, { rx: -Math.PI / 2 });
-  const slide = box(note, 0.075, 0.002, 0.026, mats.labGlass, 0, 0.003, -0.045, { cast: false });
+  const slide = box(note, 0.075, 0.002, 0.026, mats.labGlass, 0, 0.002, -0.018, { cast: false });
   slide.renderOrder = 3;
+  const tapeMat = std({ color: 0xf0e6aa, roughness: 0.8, transparent: true, opacity: 0.85 });
+  for (const sx of [-1, 1]) plane(note, 0.016, 0.034, tapeMat, sx * 0.033, 0.0035, -0.018, { rx: -Math.PI / 2, rz: sx * 0.08 });
   refs.tomNote = note;
   refs.tomSlide = slide;
 
@@ -167,6 +170,7 @@ function buildDesk(scene, refs, colliders) {
   const mug = new THREE.Group();
   mug.position.set(0.04, 0.77, 0.16);
   desk.add(mug);
+  refs.mug = mug;
   const ceramic = std({ color: 0xf2efe8, roughness: 0.35, side: THREE.DoubleSide });
   const cup = add(mug, new THREE.CylinderGeometry(0.04, 0.036, 0.095, 24, 1, true), ceramic, 0, 0.0475, 0);
   void cup;
@@ -314,7 +318,7 @@ export function drawLaptop(refs, state) {
     g.fillStyle = '#fff'; g.font = 'bold 15px sans-serif'; g.fillText('LabNote — Compte rendu d’analyse', 52, 61);
     g.fillStyle = '#c62828'; g.fillRect(W - 66, 46, 18, 18);
     g.fillStyle = '#1a2530'; g.font = '15px sans-serif';
-    g.fillText('Échantillon : T-07   Opérateur : T. Attot', 56, 100);
+    g.fillText('Patient : T-08   Opérateur : T. Attot', 56, 100);
     g.fillText('Résultat du gel d’électrophorèse :', 56, 132);
     if (state === 'done') {
       g.fillStyle = '#166534'; g.font = 'bold 22px monospace'; g.fillText(CONFIG.gelCode, 56, 168);
@@ -571,7 +575,7 @@ function buildFreezer(scene, refs, colliders) {
   rack.position.set(0.18, 0.96, 0.2);
   fz.add(rack);
   rbox(rack, 0.16, 0.06, 0.1, 0.006, std({ color: 0xf6f7f9, roughness: 0.5 }), 0, 0.03, 0);
-  plane(rack, 0.12, 0.03, std({ map: labelTex('ARN — T-07', { w: 512, h: 128, bg: '#ffffff', fg: '#c62828', size: 56 }) }), 0, 0.03, 0.051);
+  plane(rack, 0.12, 0.03, std({ map: labelTex('ARN — T-03', { w: 512, h: 128, bg: '#ffffff', fg: '#c62828', size: 56 }) }), 0, 0.03, 0.051);
   const arnTube = new THREE.Group();
   arnTube.position.set(0, 0.05, 0);
   arnTube.visible = false;

@@ -28,3 +28,21 @@
 - ✅ Digicode de sortie 1 2 3 / 4 5 6 / 7 8 9 / A 0 B.
 - ✅ Poser les objets n'importe où.
 - ✅ Retirer ses gants avant de sortir.
+
+## Retours du 25/10/2026
+- ✅ Bug PipetBot : l'objet était posé derrière la vitre au lieu d'être chargé (vitres = machine, démarrage automatique).
+- ✅ Écran PipetBot : Cônes OK / Échantillon / Réactif.
+- ✅ Flacons inutiles du frigo non saisissables ; étiquette du frigo lisible.
+- ✅ Porte d'entrée sans logo NSB2, plus d'ombre parasite devant les portes.
+- ✅ Tasse de café confisquée par M. Sé.
+- ✅ Gel quasi invisible tant que la lumière est allumée.
+- ✅ Scotch sur les deux bouts de la lame.
+- ✅ Carnet de Paul (quêtes T-07 / T-08, « pas le temps avant de partir »), brouillon, note de Tom, compte rendu du gel (sans sens de lecture).
+- ✅ Clé au fond de l'évier.
+- ✅ Solvants de l'armoire prenables mais inutiles, sans indice sur l'éthanol.
+- ✅ Classeur dans un placard à l'arrière de la paillasse centrale.
+- ✅ Dr. Leroy → M. Sé (Seb Sé, agent de sécurité).
+- ✅ Protocole réécrit.
+- ✅ Quêtes : 1 EPI, puis 2 séquençage T-07 et 3 compte rendu du gel T-08 après lecture du carnet.
+- ✅ Séquenceur : saisie du n° d'échantillon T-07, « Séquençage terminé », « Imprimer le compte-rendu du run ».
+- ✅ Papiers à taille réelle.

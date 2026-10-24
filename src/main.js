@@ -67,7 +67,7 @@ document.getElementById('start-btn').addEventListener('click', () => {
   lock();
   setTimeout(() => {
     ui.toast('Bienvenue, et merci de remplacer Tom au pied levé ! Avant toute manip : blouse, lunettes et gants. Tout est au vestiaire, sur votre gauche.',
-      { speaker: 'Dr. Leroy', duration: 8 });
+      { speaker: 'M. Sé', duration: 8 });
   }, 900);
 });
 

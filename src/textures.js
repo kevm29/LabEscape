@@ -341,7 +341,7 @@ export function posterTexture() {
   });
   g.fillStyle = '#8a949c';
   g.font = `italic 20px ${FONT}`;
-  g.fillText('Le responsable sécurité — Dr. Leroy', 40, 810);
+  g.fillText('L’agent de sécurité — S. Sé', 40, 810);
   return toTexture(c);
 }
 
@@ -403,9 +403,11 @@ export function fridgeLabelTexture() {
   g.fillStyle = '#fff'; g.fillRect(0, 0, 256, 128);
   g.strokeStyle = '#1e5bb8'; g.lineWidth = 6; g.strokeRect(3, 3, 250, 122);
   g.fillStyle = '#1e5bb8'; g.textAlign = 'center';
-  g.font = `bold 44px ${FONT}`; g.fillText('+4 °C', 128, 58);
-  g.font = `bold 22px ${FONT}`; g.fillStyle = '#333';
-  g.fillText('Réactifs — Pas de nourriture', 128, 98);
+  g.font = `bold 40px ${FONT}`; g.fillText('+4 °C', 128, 48);
+  g.font = `bold 19px ${FONT}`; g.fillStyle = '#333';
+  g.fillText('Réactifs uniquement', 128, 80);
+  g.fillStyle = '#c62828';
+  g.fillText('Pas de nourriture', 128, 106);
   return toTexture(c);
 }
 

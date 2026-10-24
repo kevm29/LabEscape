@@ -10,8 +10,8 @@ import { KEYS_ROOM } from './textures.js';
 import { tween, ease, wait } from './tween.js';
 import { sfx } from './audio.js';
 
-const LEROY = 'Dr. Leroy';
-const LEROY_ROLE = 'Responsable sécurité — par l’interphone';
+const LEROY = 'M. Sé';
+const LEROY_ROLE = 'Seb Sé, agent de sécurité — par l’interphone';
 const SHIRT = 0x3d4a58;
 const COAT = 0xf3f5f6;
 
@@ -61,6 +61,9 @@ export class Game {
       robot: 'idle', // idle | running | done
       seq: 'idle', // idle | running | done
       seqPrinted: false,
+      questsKnown: false,
+      mugGone: false,
+      cabinetTries: 0,
     };
     this.flags = new Set(); // messages déjà affichés une fois
     this.inventory = [];
@@ -153,6 +156,13 @@ export class Game {
       name: 'la poubelle à gants',
       label: () => (state.gloves ? 'Retirer et jeter ses gants' : 'Poubelle à gants usagés'),
       action: () => this.throwGloves(),
+    });
+
+    // ---- tasse de café ----
+    this.register(refs.mug, {
+      name: 'la tasse',
+      label: () => 'Tasse de café',
+      action: () => this.confiscateMug(),
     });
 
     // ---- portes ----
@@ -266,6 +276,7 @@ export class Game {
     // ---- énigme 3 : microscope ----
     this.register(refs.microscope, {
       name: 'le microscope',
+      machine: true,
       label: () => (state.slideOnScope ? 'Regarder dans le microscope' : 'Microscope'),
       action: () => {
         if (!state.slideOnScope) { this.ui.toast('Il n’y a pas de lame sur la platine.'); return; }
@@ -299,7 +310,7 @@ export class Game {
         this.setFridge(!state.fridgeOpen);
       },
       use: (item) => {
-        if (!state.fridgeOpen || !fr.reagents[item.id]) return false;
+        if (!state.fridgeOpen || !['arn', 'kit'].includes(item.id)) return false;
         if (item.temp === '-80') {
           this.ui.toast('Pas au frigo : regardez l’étiquette, c’est -80 °C. Il y a un congélateur dans le coin.', { tone: 'warn' });
           return true;
@@ -311,7 +322,13 @@ export class Game {
         return true;
       },
     });
-    for (const id of Object.keys(fr.reagents)) this.register(fr.reagents[id], this.reagentEntry(id));
+    for (const id of Object.keys(fr.reagents)) {
+      if (id === 'arn' || id === 'kit') this.register(fr.reagents[id], this.reagentEntry(id));
+      else {
+        const it = makeItem(id);
+        this.register(fr.reagents[id], { name: it.name, label: () => it.name, action: () => this.ui.toast('Pas besoin de ça.', { duration: 2 }) });
+      }
+    }
     this.register(refs.freezer.group, {
       name: 'le congélateur -80 °C',
       label: () => 'Congélateur -80 °C',
@@ -366,6 +383,7 @@ export class Game {
     const inc = refs.incubator;
     this.register(inc.group, {
       name: 'l’incubateur',
+      machine: true,
       label: () => (!state.incubatorUnlocked ? 'Incubateur CO₂ (fermé à clé)' : state.incubatorOpen ? 'Fermer l’incubateur' : 'Ouvrir l’incubateur'),
       action: () => {
         if (!state.incubatorUnlocked) { sfx.error(); this.ui.toast('Fermé à clé. Une petite serrure est fixée sur la porte.'); return; }
@@ -391,13 +409,14 @@ export class Game {
       this.register(f, {
         name: 'cette flasque',
         label: () => 'Flasque de culture',
-        action: () => this.ui.toast('Ce n’est pas l’échantillon de Tom : le protocole parle de la flasque T-07.'),
+        action: () => this.ui.toast('Ce n’est pas la flasque du patient T-07.'),
       });
     });
 
     // ---- hotte (PSM) : extraction de l'ADN ----
     this.register(refs.hood, {
       name: 'la hotte',
+      machine: true,
       label: () => (state.extracted ? 'Hotte (PSM)' : 'Hotte (PSM)'),
       action: () => {
         if (state.extracted) { this.ui.toast('L’extraction est terminée.'); return; }
@@ -439,7 +458,13 @@ export class Game {
       name: 'l’armoire de sécurité',
       label: () => (!state.cabinetUnlocked ? 'Armoire de sécurité (fermée à clé)' : state.cabinetOpen ? 'Fermer l’armoire' : 'Ouvrir l’armoire'),
       action: () => {
-        if (!state.cabinetUnlocked) { sfx.error(); this.ui.toast('Armoire pour produits inflammables. Fermée à clé.'); return; }
+        if (!state.cabinetUnlocked) {
+          sfx.error();
+          state.cabinetTries++;
+          if (state.cabinetTries < 2) this.ui.toast('Armoire pour produits inflammables. Fermée à clé.');
+          else this.ui.toast('La clé de l’armoire ? Tom en gardait un double… scotché sous une paillasse, il me semble. Il faudra vous baisser (Ctrl) pour le trouver.', { speaker: LEROY, duration: 7 });
+          return;
+        }
         this.setCabinet(!state.cabinetOpen);
       },
       use: (item) => {
@@ -448,29 +473,30 @@ export class Game {
         state.cabinetUnlocked = true;
         sfx.key();
         this.setCabinet(true);
-        this.ui.toast('Armoire ventilée pour produits inflammables : solvants et alcools y sont rangés à l’écart des sources de chaleur, au-dessus d’un bac de rétention.',
-          { speaker: LEROY, duration: 7 });
+        this.ui.toast('L’armoire de sécurité s’ouvre. Les produits inflammables y sont rangés à l’écart de la chaleur, au-dessus d’un bac de rétention.',
+          { speaker: LEROY, duration: 6 });
         return true;
       },
     });
-    this.registerPickup(cab.ethanol, 'ethanol', { label: 'Prendre l’éthanol 80 %', message: 'Éthanol 80 % : le réactif qu’il faut au robot.', when: () => state.cabinetOpen });
-    cab.decor.forEach((b) => this.register(b, {
-      name: 'ce solvant',
-      label: () => 'Flacon de solvant',
-      action: () => this.ui.toast('Pas besoin de ça : le protocole demande de l’éthanol 80 %.'),
-    }));
+    this.registerPickup(cab.ethanol, 'ethanol', { label: 'Prendre : Éthanol 80 %', message: 'Vous prenez le flacon d’éthanol 80 %.', when: () => state.cabinetOpen });
+    ['acetone', 'isopropanol', 'methanol', 'xylene'].forEach((id, i) => {
+      const it = makeItem(id);
+      this.registerPickup(cab.decor[i], id, { label: `Prendre : ${it.name}`, message: `Vous prenez : ${it.name}.`, when: () => state.cabinetOpen });
+    });
 
     // ---- robot de pipetage ----
     this.register(refs.robot.group, {
-      name: 'le robot',
+      name: 'le PipetBot',
+      machine: true,
       label: () => {
         if (state.robot === 'running') return 'Préparation en cours…';
-        if (state.robot === 'done') return 'Robot de pipetage (terminé)';
-        return state.robotDna && state.robotEthanol ? 'Lancer la préparation des librairies' : 'Robot de pipetage';
+        if (state.robot === 'done') return 'PipetBot (terminé)';
+        return 'PipetBot';
       },
       action: () => this.useRobot(),
       use: (item) => {
         if (state.robot !== 'idle') return false;
+        if (item.solvent && item.id !== 'ethanol') { this.ui.toast('Ce réactif n’est pas adapté.', { duration: 2.5 }); return true; }
         if (item.id === 'adn' && !state.robotDna) {
           this.removeItem('adn');
           state.robotDna = true;
@@ -484,7 +510,12 @@ export class Game {
         }
         sfx.plastic();
         drawRobot(refs, { dna: state.robotDna, ethanol: state.robotEthanol });
-        this.ui.toast(state.robotDna && state.robotEthanol ? 'Tout est chargé. Cliquez sur le robot pour lancer la préparation.' : 'Chargé dans le robot.', { duration: 3 });
+        if (state.robotDna && state.robotEthanol) {
+          this.ui.toast('Tout est chargé : le PipetBot démarre.', { duration: 3 });
+          setTimeout(() => { if (state.robot === 'idle') this.runRobot(); }, 1200);
+        } else {
+          this.ui.toast(item.id === 'adn' ? 'Échantillon chargé dans le PipetBot.' : 'Réactif chargé dans le PipetBot.', { duration: 3 });
+        }
         return true;
       },
     });
@@ -497,12 +528,13 @@ export class Game {
     // ---- séquenceur ----
     this.register(refs.sequencer.group, {
       name: 'le séquenceur',
-      label: () => ({ idle: 'Séquenceur NX-7', running: 'Séquençage en cours…', done: 'Voir les résultats du run' }[state.seq]),
+      machine: true,
+      label: () => ({ idle: 'Séquenceur NX-7', loaded: 'Saisir le n° d’échantillon', running: 'Séquençage en cours…', done: 'Voir les résultats du run' }[state.seq]),
       action: () => this.useSequencer(),
       use: (item) => {
         if (item.id !== 'flowcell' || state.seq !== 'idle') return false;
         this.removeItem('flowcell');
-        this.runSequencer();
+        this.loadFlowcell();
         return true;
       },
     });
@@ -579,11 +611,24 @@ export class Game {
     if (!found) {
       this.raycaster.setFromCamera({ x: 0, y: 0 }, this.camera);
       const hits = this.raycaster.intersectObjects(this.scene.children, true);
-      for (const h of hits) {
-        if (h.object.userData.noRay || !isVisible(h.object) || h.object.material?.depthWrite === false) continue;
-        if (h.object.isPoints || h.object.isLine || !h.face) continue;
+      const usable = (h) => !h.object.userData.noRay && isVisible(h.object) && !h.object.isPoints && !h.object.isLine && h.face;
+      const isGlass = (h) => h.object.material?.depthWrite === false;
+      const toHit = (h) => ({ point: h.point.clone(), normal: h.face.normal.clone().transformDirection(h.object.matrixWorld) });
+      for (let i = 0; i < hits.length; i++) {
+        const h = hits[i];
+        if (!usable(h)) continue;
+        if (isGlass(h)) {
+          // une vitre laisse passer le regard, sauf si elle fait partie d'une machine (robot, hotte…) :
+          // on vise alors la machine, ou un objet précis derrière la vitre (flowcell, tube…)
+          const owner = this.findInteractable(h.object);
+          if (!owner) continue;
+          const next = hits.slice(i + 1).find((h2) => usable(h2) && !isGlass(h2));
+          const inner = next && this.findInteractable(next.object);
+          if (inner && inner !== owner) { found = inner; hit = toHit(next); } else { found = owner; hit = toHit(h); }
+          break;
+        }
         found = this.findInteractable(h.object);
-        hit = { point: h.point.clone(), normal: h.face.normal.clone().transformDirection(h.object.matrixWorld) };
+        hit = toHit(h);
         break; // le premier objet visible bloque la vue
       }
     }
@@ -618,6 +663,7 @@ export class Game {
         const box = this.current.container && this.current.container();
         if (box && this.hit) { this.dropItem(held, this.hit, box); return; }
         sfx.click();
+        if (held.solvent && this.current.machine) { this.ui.toast('Ce réactif n’est pas adapté.', { duration: 2.5 }); return; }
         this.ui.toast(USELESS[this.uselessIdx % USELESS.length], { duration: 2.5 });
         this.uselessIdx++;
         return;
@@ -738,6 +784,7 @@ export class Game {
     this.viewingId = it.id;
     this.ui.showItem(it);
     this.refreshHud();
+    if (it.id === 'carnetPaul') setTimeout(() => this.learnQuests(), 1200);
     return true;
   }
 
@@ -769,16 +816,39 @@ export class Game {
   refreshHud() {
     this.ui.updateInventory(this.inventory, this.selected);
     this.ui.setHeld(this.heldItem());
-    this.ui.updateObjectives(this.state, this.objectiveText());
+    this.ui.updateObjectives(this.quests(), this.questHint());
   }
 
-  objectiveText() {
+  quests() {
+    const s = this.state;
+    const q = [{ id: 'epi', text: '1. Mettre ses EPI', done: this.equipped }];
+    if (!this.equipped) {
+      q.push({ id: 'coat', text: 'Blouse', done: s.coat !== null, sub: true });
+      q.push({ id: 'goggles', text: 'Lunettes', done: s.goggles, sub: true });
+      q.push({ id: 'gloves', text: 'Gants', done: s.gloves, sub: true });
+    }
+    if (s.questsKnown) {
+      q.push({ id: 'seq', text: '2. Finaliser le séquençage du patient T-07', done: s.seqPrinted });
+      q.push({ id: 'gel', text: '3. Rendre le compte rendu du gel du patient T-08', done: s.laptop === 'done' });
+      if (s.seqPrinted && s.laptop === 'done') q.push({ id: 'exit', text: '4. Sortir du labo', done: false });
+    }
+    return q;
+  }
+
+  questHint() {
     const s = this.state;
     if (!this.equipped) return '';
-    if (s.exitOpen) return 'La porte est ouverte. Retirez vos gants avant de sortir !';
-    if (s.seq === 'done') return 'Le run est fini : imprimez le compte rendu et trouvez comment sortir.';
-    if (s.laptop !== 'done') return 'Terminer le compte rendu de gel de Tom (PC du bureau), puis son séquençage.';
-    return 'Finaliser le séquençage de Tom en suivant son protocole.';
+    if (!s.questsKnown) return 'Le Dr. Hemick a sûrement laissé des consignes quelque part…';
+    if (s.seqPrinted && s.laptop === 'done') return s.gloves ? 'Pensez à retirer vos gants avant de toucher la porte.' : '';
+    return '';
+  }
+
+  learnQuests() {
+    if (this.state.questsKnown) return;
+    this.state.questsKnown = true;
+    this.refreshHud();
+    sfx.success();
+    this.ui.toast('Nouvelles quêtes : finaliser le séquençage du patient T-07, et rendre le compte rendu du gel du patient T-08.', { tone: 'success', duration: 6 });
   }
 
   // ======================================================================
@@ -827,8 +897,8 @@ export class Game {
       this.equippedAt = this.time;
       setTimeout(() => {
         sfx.success();
-        this.ui.toast('Tenue réglementaire, parfait ! Tom m’a dit qu’il avait laissé deux choses en plan : le compte rendu de son gel, sur le PC du bureau, et son séquençage. Son protocole est rangé dans un placard de la paillasse centrale.',
-          { speaker: LEROY, duration: 10, tone: 'success' });
+        this.ui.toast('Tenue réglementaire, parfait ! Vous pouvez entrer en zone de manip. Le Dr. Hemick, le chef de Tom, a sûrement laissé des consignes quelque part…',
+          { speaker: LEROY, duration: 8, tone: 'success' });
       }, 400);
     }
   }
@@ -1051,7 +1121,7 @@ export class Game {
       }
     }
     if (r === 'unlocked') {
-      this.once('pc-blocked', () => this.ui.toast('La session s’ouvre… sur un compte rendu bloqué : il manque le résultat du gel d’électrophorèse.', { duration: 5 }));
+      this.once('pc-blocked', () => this.ui.toast('La session s’ouvre… sur le compte rendu du patient T-08, bloqué : il manque le résultat du gel d’électrophorèse.', { duration: 5 }));
     }
     if (r === 'ok') {
       state.laptop = 'done';
@@ -1059,6 +1129,7 @@ export class Game {
       await this.printSheet(refs.printer.sheet);
       state.reportPrinted = true;
       this.refreshHud();
+      if (!state.questsKnown) this.learnQuests();
       this.ui.toast('Bien lu ! Sur un gel de séquençage, les fragments les plus courts migrent le plus loin : on lit la séquence du bas vers le haut, de 5′ vers 3′.',
         { speaker: LEROY, tone: 'success', duration: 9 });
     }
@@ -1089,7 +1160,7 @@ export class Game {
     sfx.click();
     this.updateGelGlow();
     if (s.uvOn && !this.lighting.dark) {
-      this.once('uv-light', () => this.ui.toast('Les UV s’allument… mais avec toute cette lumière, on distingue à peine les bandes.', { duration: 5 }));
+      this.ui.toast('Les UV s’allument… mais avec toute cette lumière, on ne distingue rien sur le gel.', { duration: 4 });
     }
     if (s.uvOn && this.lighting.dark) {
       this.once('uv-dark', () => this.ui.toast('Dans le noir, les bandes du gel s’illuminent en orange : le colorant fixé à l’ADN fluoresce sous UV. Heureusement, vous portez vos lunettes !',
@@ -1100,8 +1171,8 @@ export class Game {
   updateGelGlow() {
     const t = this.refs.transillum;
     const on = this.state.uvOn, dark = this.lighting.dark;
-    t.bandMat.visible = on; // sans UV, l'ADN coloré est invisible
-    t.bandMat.emissiveIntensity = on ? (dark ? 3.2 : 0.15) : 0;
+    t.bandMat.visible = on && dark; // il faut les UV ET le noir pour voir les bandes
+    t.bandMat.emissiveIntensity = on && dark ? 3.2 : 0;
     t.plateMat.emissiveIntensity = on ? (dark ? 0.35 : 0.08) : 0;
     t.sw.material.emissiveIntensity = on ? 1.5 : 0;
     t.uvLight.intensity = on ? (dark ? 0.5 : 0.1) : 0;
@@ -1292,9 +1363,12 @@ export class Game {
     await wait(0.4);
     ice.removeFromParent();
     this.state.iceMelted = true;
-    this.addItem(makeItem('petiteCle'));
-    sfx.pickup();
-    this.ui.toast('La glace fond sous l’eau du robinet… et libère une petite clé argentée ! Reste à savoir ce qu’elle ouvre.', { tone: 'success', duration: 6 });
+    const key = makeItemMesh(makeItem('petiteCle'));
+    key.position.set(s.basinX + 0.02, s.basinY + 0.004, 0.04);
+    key.rotation.y = 0.7;
+    s.group.add(key);
+    this.registerPickup(key, 'petiteCle', { label: 'Ramasser la petite clé', message: 'Une petite clé argentée, encore froide. Reste à savoir ce qu’elle ouvre.' });
+    this.ui.toast('La glace a fondu sous l’eau du robinet… Quelque chose brille au fond de l’évier.', { duration: 5 });
     this.end();
   }
 
@@ -1405,7 +1479,7 @@ export class Game {
   // ======================================================================
   // Séquenceur + ellipse temporelle
   // ======================================================================
-  async runSequencer() {
+  async loadFlowcell() {
     const { refs, state } = this;
     const sq = refs.sequencer;
     this.begin();
@@ -1417,10 +1491,20 @@ export class Game {
     sq.fcInside.visible = false;
     await tween(0.4, (k) => { sq.flap.rotation.x = 1.3 * (1 - k); }, { easing: ease.in });
     sfx.snap();
+    state.seq = 'loaded';
+    drawSequencer(refs, 'loaded');
+    this.end();
+    this.ui.toast('Flowcell insérée. L’écran du séquenceur demande le numéro d’échantillon.', { duration: 4 });
+  }
+
+  async startRun(sample) {
+    const { refs, state } = this;
+    const sq = refs.sequencer;
+    this.begin();
     state.seq = 'running';
     sq.statusMat.color.set(0x22c55e);
     sq.statusMat.emissive.set(0x22c55e);
-    await tween(1.6, (k) => drawSequencer(refs, 'running', k * 0.04), { easing: ease.linear });
+    await tween(1.6, (k) => drawSequencer(refs, 'running', k * 0.04, sample), { easing: ease.linear });
     this.ui.toast('Le run démarre. Il en a pour environ trois heures…', { duration: 3 });
     await wait(1.2);
     await this.ui.ellipse(`${['Une', 'Deux', 'Trois', 'Quatre'][CONFIG.runHours - 1] || CONFIG.runHours} heures plus tard…`, 2.2);
@@ -1428,18 +1512,33 @@ export class Game {
     state.seq = 'done';
     sq.statusMat.color.set(0xffffff);
     sq.statusMat.emissive.set(0xffffff);
-    drawSequencer(refs, 'done');
+    drawSequencer(refs, 'done', 1, sample);
     this.refreshHud();
     this.end();
     sfx.success();
-    this.ui.toast('Le run est terminé ! L’écran du séquenceur affiche les résultats.', { tone: 'success', duration: 5 });
+    this.ui.toast('Séquençage terminé ! L’écran du séquenceur affiche les résultats.', { tone: 'success', duration: 5 });
   }
 
   async useSequencer() {
     const s = this.state;
-    if (s.seq === 'idle') { this.ui.toast('Séquenceur prêt. Il attend une flowcell chargée par le robot.'); return; }
+    if (s.seq === 'idle') { this.ui.toast('Séquenceur prêt. Il attend une flowcell chargée.'); return; }
     if (s.seq === 'running') return;
+    if (s.seq === 'loaded') {
+      const r = await this.ui.sequencer({
+        mode: 'setup',
+        checkSample: (v) => {
+          const n = v.replace(/\s/g, '').replace(/^T(\d)/, 'T-$1');
+          if (n === 'T-07') return true;
+          return /^T-\d+$/.test(n) ? `Aucune librairie « ${n} » sur cette flowcell.` : 'Format attendu : T-00.';
+        },
+      });
+      if (r === 'start') this.startRun('T-07');
+      return;
+    }
     await this.ui.sequencer({
+      mode: 'results',
+      sample: 'T-07',
+      printed: s.seqPrinted,
       onPrint: () => {
         if (s.seqPrinted) return;
         s.seqPrinted = true;
@@ -1447,9 +1546,28 @@ export class Game {
       },
     });
     if (s.seqPrinted) {
-      this.once('q30', () => this.ui.toast('Q30, c’est une base sur mille lue de travers. Plus de 90 % des bases au-dessus : un très bon run ! Votre compte rendu attend à l’imprimante du bureau.',
+      this.once('q30', () => this.ui.toast('Q30, c’est une base sur mille lue de travers. Plus de 90 % des bases au-dessus : un très bon run ! Votre compte-rendu attend à l’imprimante du bureau.',
         { speaker: LEROY, duration: 8 }));
     }
+  }
+
+  // ======================================================================
+  // Tasse de café : on ne boit pas au labo !
+  // ======================================================================
+  async confiscateMug() {
+    const { refs, state } = this;
+    if (state.mugGone) return;
+    state.mugGone = true;
+    this.interactables.delete(refs.mug);
+    sfx.buzzer();
+    this.ui.flash('rgba(242,194,0,0.35)');
+    await this.ui.dialog({
+      speaker: LEROY, role: LEROY_ROLE,
+      text: '<b>On ne boit pas et on ne mange pas dans un laboratoire !</b><br><br>Une tasse posée sur une paillasse, c’est le meilleur moyen d’avaler un produit chimique ou un échantillon par erreur. Je confisque.',
+      tone: 'danger', button: 'Bien compris',
+    });
+    await tween(0.4, (k) => { refs.mug.scale.setScalar(1 - k); }, { easing: ease.in });
+    refs.mug.visible = false;
   }
 
   // ======================================================================

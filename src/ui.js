@@ -46,7 +46,7 @@ export class UI {
     if (this.modalCount === 0) this.onModalClose();
   }
 
-  dialog({ speaker = '', role = '', text = '', tone = 'info', button = 'Compris', avatar = 'DL' }) {
+  dialog({ speaker = '', role = '', text = '', tone = 'info', button = 'Compris', avatar = 'SS' }) {
     return new Promise((resolve) => {
       this.openModal();
       const el = $('dialog');
@@ -191,7 +191,7 @@ export class UI {
   }
 
   // Ordinateur portable : fenêtre bloquée sur le résultat manquant.
-  // check(value) -> 'ok' | 'wrong' ; onWrong() affiche la remarque du Dr. Leroy.
+  // check(value) -> 'ok' | 'wrong' ; onWrong() affiche la remarque de M. Sé.
   pc({ check, onWrong, locked = false, checkPassword = () => true }) {
     return new Promise((resolve) => {
       this.openModal();
@@ -288,32 +288,58 @@ export class UI {
   }
 
   // Écran du séquenceur : résultats + impression
-  sequencer({ onPrint }) {
+  // Écran du séquenceur.
+  // mode 'setup' : saisie du n° d'échantillon (resolve('start') si checkSample l'accepte)
+  // mode 'results' : statistiques + impression
+  sequencer({ mode, sample = '', checkSample = () => true, onPrint = () => {}, printed = false }) {
     return new Promise((resolve) => {
       this.openModal();
       const el = $('seq');
+      const setup = $('seq-setup'), results = $('seq-results');
+      setup.hidden = mode !== 'setup';
+      results.hidden = mode !== 'results';
+      $('seq-title').textContent = sample ? `NX-7 · RUN ${sample}` : 'NX-7';
       el.classList.add('show');
+      const input = $('seq-sample'), err = $('seq-err');
+      input.value = '';
+      err.textContent = '';
+      if (mode === 'setup') setTimeout(() => input.focus(), 50);
       const btn = $('seq-print');
       const status = $('seq-status');
-      status.textContent = '';
-      btn.disabled = false;
+      status.textContent = printed ? 'Le compte-rendu a déjà été imprimé au bureau.' : '';
+      btn.disabled = printed;
       const print = () => {
         btn.disabled = true;
         sfx.click();
         status.textContent = 'Impression envoyée à l’imprimante du bureau.';
         onPrint();
       };
-      const onKey = (e) => { if (e.code === 'Escape') finish(); };
-      const finish = () => {
+      const start = () => {
+        const v = input.value.trim().toUpperCase();
+        if (!v) { sfx.error(); err.textContent = 'Saisissez un numéro d’échantillon.'; return; }
+        const r = checkSample(v);
+        if (r !== true) { sfx.error(); err.textContent = r; input.select(); return; }
+        sfx.success();
+        finish('start');
+      };
+      const onKey = (e) => {
+        if (e.code === 'Escape') finish();
+        else if ((e.code === 'Enter' || e.code === 'NumpadEnter') && mode === 'setup') { e.preventDefault(); start(); }
+      };
+      const finish = (r) => {
         el.classList.remove('show');
         btn.removeEventListener('click', print);
-        $('seq-close').removeEventListener('click', finish);
+        $('seq-start').removeEventListener('click', start);
+        $('seq-close').removeEventListener('click', onClose);
         removeEventListener('keydown', onKey);
+        input.blur();
         this.closeModal();
-        resolve();
+        resolve(r);
       };
+      const onClose = () => finish();
       btn.addEventListener('click', print);
-      $('seq-close').addEventListener('click', finish);
+      $('seq-start').addEventListener('click', start);
+      $('seq-close').addEventListener('click', onClose);
       addEventListener('keydown', onKey);
     });
   }
@@ -371,13 +397,16 @@ export class UI {
     $('frost').style.opacity = amount.toFixed(2);
   }
 
-  updateObjectives(state, status) {
-    const equipped = state.coat !== null && state.goggles && state.gloves;
-    $('obj-title').textContent = equipped ? 'Explorer le laboratoire' : 'S’équiper avant la manip';
-    const set = (k, on) => $(`obj-${k}`).classList.toggle('done', on);
-    set('coat', state.coat !== null);
-    set('goggles', state.goggles);
-    set('gloves', state.gloves);
+  // quests : [{ id, text, done, sub }] ; status : texte d'aide sous la liste
+  updateObjectives(quests, status) {
+    const list = $('obj-list');
+    const key = JSON.stringify(quests);
+    if (key !== this.lastQuests) {
+      const prev = new Set((this.lastQuestIds || []));
+      list.innerHTML = quests.map((q) => `<li class="${q.done ? 'done' : ''}${q.sub ? ' sub' : ''}${prev.size && !prev.has(q.id) ? ' new' : ''}">${q.text}</li>`).join('');
+      this.lastQuests = key;
+      this.lastQuestIds = quests.map((q) => q.id);
+    }
     const st = $('obj-status');
     st.textContent = status || '';
     st.hidden = !status;

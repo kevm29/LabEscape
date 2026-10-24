@@ -55,11 +55,11 @@ const kitSvg = (size = 30) => `<svg viewBox="0 0 64 64" width="${size}" height="
   <text x="32" y="42" font-size="11" font-weight="700" text-anchor="middle" fill="#1e5bb8" font-family="sans-serif">ADN</text>
 </svg>`;
 
-const bottleSvg = (size = 30) => `<svg viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true">
-  <rect x="25" y="4" width="14" height="8" rx="2" fill="#c62828"/>
+const bottleSvg = (size = 30, color = '#c62828', text = 'EtOH') => `<svg viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true">
+  <rect x="25" y="4" width="14" height="8" rx="2" fill="${color}"/>
   <path d="M26 12h12v6l6 6v32a4 4 0 0 1-4 4H24a4 4 0 0 1-4-4V24l6-6z" fill="#eef5fb" stroke="#9fb8c8" stroke-width="1.5"/>
-  <rect x="20" y="30" width="24" height="16" fill="#fff" stroke="#c62828" stroke-width="1"/>
-  <text x="32" y="41" font-size="8" font-weight="700" text-anchor="middle" fill="#c62828" font-family="sans-serif">EtOH</text>
+  <rect x="20" y="30" width="24" height="16" fill="#fff" stroke="${color}" stroke-width="1"/>
+  <text x="32" y="41" font-size="8" font-weight="700" text-anchor="middle" fill="${color}" font-family="sans-serif">${text}</text>
 </svg>`;
 
 const flowcellSvg = (size = 30) => `<svg viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true">
@@ -90,35 +90,35 @@ export const ITEMS = {
     doc: true,
     view: () => doc(`<div class="hand">Carnet de labo — P. Hemick</div>
       <div class="postit">PC labo<br>mdp : <b>LB_026</b></div>
-      <p class="hand">23/10 — Tom malade, arrêté jusqu’à mercredi.</p>
-      <p class="hand">Son <b>compte rendu de gel</b> est resté en plan sur le PC : il manque le résultat.</p>
-      <p class="hand">Le gel est encore sur le <b>transilluminateur</b> (penser à éteindre les UV…).</p>`),
+      <p class="hand">23/10 — Tom malade, arrêté jusqu’à mercredi. Il reste à finir :</p>
+      <p class="hand">• le <b>séquençage du patient T-07</b> (son protocole est rangé dans un placard de la paillasse centrale) ;</p>
+      <p class="hand">• le <b>compte rendu du gel du patient T-08</b> : resté en plan sur le PC, le gel est encore sur le transilluminateur.</p>
+      <p class="hand">Pas le temps de m’en occuper avant de partir…</p>`, 'notebook'),
   },
   compteRendu: {
     name: 'Compte rendu',
     icon: paperSvg(),
-    model: 'paper',
+    model: 'paperA4',
     doc: true,
     view: () => doc(`<header><b>Laboratoire de Biologie Cellulaire et Moléculaire</b></header>
       <div class="meta">Le ${today()}</div>
       <h4>Compte rendu d’analyse</h4>
       <table>
-        <tr><td>Échantillon</td><td>T-07</td></tr>
-        <tr><td>Analyse</td><td>Séquençage (gel 4 pistes A/C/G/T)</td></tr>
+        <tr><td>Patient</td><td>T-08</td></tr>
+        <tr><td>Analyse</td><td>Électrophorèse (gel 4 pistes A/C/G/T)</td></tr>
         <tr><td>Résultat du gel</td><td><b>${CONFIG.gelCode}</b></td></tr>
-        <tr><td>Lecture</td><td>du bas (+) vers le haut (−)</td></tr>
       </table>
       <footer>T. ATTOT — Doctorant<br>tom.attot@labo-bcm.fr<br>Poste <b>51.23</b></footer>`, 'report'),
   },
   noteTom: {
     name: 'Note de Tom',
     icon: paperSvg(30, '#1e3a8a'),
-    model: 'paper',
+    model: 'note',
     doc: true,
     slide: true, // la lame est encore scotchée dessus
-    view: (it) => doc(`<div class="tape"></div><div class="tape r"></div>
-      ${it.slide ? '<div class="taped-slide"></div>' : '<div class="tape-mark"></div>'}
-      <p class="hand big">Coïncidence !<br>Pile le code du frigo !</p>`, 'note')
+    view: (it) => doc(`<div class="slide-zone">${it.slide ? '<div class="taped-slide"></div>' : ''}<div class="tape l"></div><div class="tape r"></div></div>
+      <p class="hand big">Coïncidence !<br>Pile le code du frigo !</p>
+      <p class="hand small">Je la garde pour m’en souvenir.</p>`, 'note')
       + (it.slide ? '<p class="act"><kbd>Clic</kbd> Décrocher la lame scotchée</p>' : ''),
   },
   lame: {
@@ -131,27 +131,25 @@ export const ITEMS = {
   brouillon: {
     name: 'Brouillon',
     icon: paperSvg(),
-    model: 'paper',
+    model: 'crumpled',
     doc: true,
-    view: () => doc(`<p class="hand">Gel séquence — à lire :</p>
+    view: () => doc(`<p class="hand">Gel T-08 — à lire :</p>
       <p class="hand">puits (−) en haut → les fragments migrent vers le (+)</p>
       <p class="hand">les <b>petits</b> vont le plus loin ⇒ lire du <b>BAS</b> vers le <b>HAUT</b> !</p>
-      <p class="hand"><s>lire de gauche à droite</s> NON</p>
-      <p class="hand small">PS : sous UV, toujours les lunettes.</p>`, 'crumpled'),
+      <p class="hand"><s>lire de haut en bas</s> → NON</p>
+      <p class="hand small">PS : sous UV, toujours les lunettes ! Et éteindre la lumière pour bien voir les bandes.</p>`, 'crumpled'),
   },
   protocole: {
     name: 'Protocole',
     icon: bookSvg('#1e5bb8'),
     model: 'binder',
     doc: true,
-    view: () => doc(`<header><b>Protocole — Séquençage de l’échantillon T-07</b><br><span class="small">T. Attot · version 3</span></header>
+    view: () => doc(`<header><b>Protocole de séquençage</b><br><span class="small">T. Attot · v3</span></header>
       <ol class="steps">
-        <li><b>Cellules</b> : récupérer la flasque <b>T-07</b> dans l’<b>incubateur CO₂</b> (37 °C). Il est fermé à clé depuis l’inventaire.</li>
-        <li><b>Extraction de l’ADN</b> sous la <b>hotte</b> (PSM) avec le <b>kit d’extraction</b> rangé au <b>frigo +4 °C</b> : lyse → fixation sur colonne → lavages → élution.</li>
-        <li><b>Librairies</b> : déposer l’ADN dans le <b>robot de pipetage</b>. Il fragmente l’ADN, ajoute les adaptateurs, purifie sur billes magnétiques et charge la <b>flowcell</b>.<br>
-          ⚠ Le robot a besoin d’<b>éthanol 80 %</b> frais pour laver les billes : <b>armoire de sécurité</b> (inflammable). Double de la clé scotché <b>sous la paillasse de la hotte</b>, merci de le remettre !</li>
-        <li><b>Séquençage</b> : insérer la flowcell dans le <b>séquenceur</b> et lancer le run (≈ 3 h).</li>
-        <li><b>Compte rendu</b> : l’imprimer depuis l’écran du séquenceur.</li>
+        <li><b>Culture cellulaire</b> : les cellules sont en culture dans l’<b>incubateur CO₂</b> à 37 °C.</li>
+        <li><b>Extraction d’ADN</b> : travailler sous la <b>hotte</b> avec le <b>kit d’extraction</b> (conservé à 4 °C) : lyse → fixation sur colonne → lavage → élution.</li>
+        <li><b>Préparation des librairies</b> : automatique via le <b>PipetBot</b> : fragmentation de l’ADN → ajout des adaptateurs → purification → chargement sur flowcell. Ne pas oublier de mettre de l’<b>éthanol</b> (armoire de sécurité) dans le PipetBot pour laver les billes.</li>
+        <li><b>Séquençage</b> : insérer la <b>flowcell</b> dans le séquenceur et lancer le run (≈ 3 h).</li>
       </ol>`, 'protocol'),
   },
   pbs: {
@@ -169,7 +167,7 @@ export const ITEMS = {
   arn: {
     name: 'ARN (-80 °C)', temp: '-80', icon: tubeSvg('#f8f8f8', '#f2c200'), model: 'tube', color: 0xf8f8f8,
     view: () => `<div class="obj">${tubeSvg('#f8f8f8', '#f2c200', 160)}</div>
-      <p>ARN extrait — T-07. Étiquette en rouge : <b style="color:#ef4444">À CONSERVER À -80 °C</b>.</p>`,
+      <p>ARN extrait — T-03. Étiquette en rouge : <b style="color:#ef4444">À CONSERVER À -80 °C</b>.</p>`,
   },
   kit: {
     name: 'Kit extraction ADN', temp: '+4', icon: kitSvg(), model: 'kit',
@@ -196,9 +194,17 @@ export const ITEMS = {
     view: () => `<div class="obj">${keySvg('#aab4bd', 160)}</div><p>Une clé avec une étiquette rouge « SECOURS — armoire sécurité ».</p>`,
   },
   ethanol: {
-    name: 'Éthanol 80 %', icon: bottleSvg(), model: 'bottle',
-    view: () => `<div class="obj">${bottleSvg(170)}</div><p>Flacon d’<b>éthanol 80 %</b>. Pictogramme flamme : <b>inflammable</b>, à ranger dans l’armoire de sécurité.</p>`,
+    name: 'Éthanol 80 %', solvent: true, icon: bottleSvg(), model: 'bottle', labelColor: 0xc62828,
+    view: () => `<div class="obj">${bottleSvg(170)}</div><p>Flacon d’<b>éthanol 80 %</b>. Inflammable.</p>`,
   },
+  acetone: { name: 'Acétone', solvent: true, icon: bottleSvg(30, '#1e5bb8', 'ACÉT.'), model: 'bottle', labelColor: 0x1e5bb8,
+    view: () => `<div class="obj">${bottleSvg(170, '#1e5bb8', 'ACÉT.')}</div><p>Acétone. Inflammable.</p>` },
+  isopropanol: { name: 'Isopropanol', solvent: true, icon: bottleSvg(30, '#1e5bb8', 'IPA'), model: 'bottle', labelColor: 0x1e5bb8,
+    view: () => `<div class="obj">${bottleSvg(170, '#1e5bb8', 'IPA')}</div><p>Isopropanol (propan-2-ol). Inflammable.</p>` },
+  methanol: { name: 'Méthanol', solvent: true, icon: bottleSvg(30, '#111', 'MeOH'), model: 'bottle', labelColor: 0x111111,
+    view: () => `<div class="obj">${bottleSvg(170, '#111', 'MeOH')}</div><p>Méthanol. Inflammable et toxique.</p>` },
+  xylene: { name: 'Xylène', solvent: true, icon: bottleSvg(30, '#111', 'XYL.'), model: 'bottle', labelColor: 0x111111,
+    view: () => `<div class="obj">${bottleSvg(170, '#111', 'XYL.')}</div><p>Xylène. Inflammable, nocif.</p>` },
   flowcell: {
     name: 'Flowcell', icon: flowcellSvg(), model: 'flowcell',
     view: () => `<div class="obj">${flowcellSvg(190)}</div><p>La <b>flowcell</b> chargée par le robot : des millions de fragments d’ADN y sont fixés, prêts à être lus par le séquenceur.</p>`,
@@ -206,7 +212,7 @@ export const ITEMS = {
   crSequencage: {
     name: 'Rapport de run',
     icon: paperSvg(30, '#14b8a6'),
-    model: 'paper',
+    model: 'paperA4',
     doc: true,
     view: () => doc(`<header><b>Compte rendu de run</b> · Échantillon T-07</header>
       <div class="meta">Séquenceur NX-7 — Labo ${CONFIG.roomNumber} · ${today()}</div>

@@ -444,11 +444,10 @@ export function buildRoom(scene) {
   const entry = new THREE.Group();
   entry.position.set(-2.2, 0, maxZ);
   scene.add(entry);
-  box(entry, 1.12, 2.18, 0.06, mats.doorFrame, 0, 1.09, -0.02);
-  const entryDoor = box(entry, 1.0, 2.1, 0.05, mats.door, 0, 1.05, -0.04);
+  box(entry, 1.12, 2.18, 0.06, mats.doorFrame, 0, 1.09, -0.02, { cast: false });
+  const entryDoor = box(entry, 1.0, 2.1, 0.05, mats.door, 0, 1.05, -0.04, { cast: false });
   box(entry, 0.35, 0.45, 0.052, mats.glass, 0, 1.55, -0.04, { cast: false });
-  cyl(entry, 0.012, 0.012, 0.14, mats.steel, 0.38, 1.05, -0.1, { rz: Math.PI / 2 }, 10);
-  plane(entry, 0.2, 0.235, labelMat(T.biohazardDoorSignTexture(), { transparent: true }), 0, 1.15, -0.068, { ry: Math.PI });
+  cyl(entry, 0.012, 0.012, 0.14, mats.steel, 0.38, 1.05, -0.1, { rz: Math.PI / 2, cast: false }, 10);
   refs.entryDoor = entryDoor;
 
   // ===== ZONE DE MANIP : hottes vitrées au nord =====
@@ -531,9 +530,10 @@ export function buildRoom(scene) {
   rbox(cb, 0.22, 0.12, 0.13, 0.008, new THREE.MeshStandardMaterial({ color: 0xb98d5a, roughness: 0.85 }), -0.95, 0.16, -0.22);
   bottle(cb, 1.45, 0.1, -0.25, { liquid: 0xffffff, fill: 0.7, h: 0.22, r: 0.05 });
   bottle(cb, 1.6, 0.1, -0.22, { liquid: 0x9fd3ff, fill: 0.5, h: 0.22, r: 0.05 });
-  // le classeur du protocole : placard côté sud, 3e porte en partant de l'ouest
+  // le classeur du protocole : placard à l'arrière (côté nord, face aux hottes), 4e porte depuis l'ouest
   const binder = new THREE.Group();
-  binder.position.set(-0.3, 0.48, 0.25);
+  binder.position.set(0.31, 0.48, -0.25);
+  binder.rotation.y = Math.PI;
   cb.add(binder);
   rbox(binder, 0.05, 0.31, 0.25, 0.006, new THREE.MeshStandardMaterial({ color: 0x1e5bb8, roughness: 0.5 }), 0, 0.165, 0, { rz: -0.08 });
   const spine = T.textPlaneTexture('PROTOCOLE', { w: 512, h: 96, bg: '#ffffff', fg: '#1e5bb8', size: 56 });
@@ -578,11 +578,11 @@ export function buildRoom(scene) {
   exit.position.set(maxX, 0, -2.4);
   exit.rotation.y = -Math.PI / 2;
   scene.add(exit);
-  box(exit, 1.12, 2.18, 0.06, mats.doorFrame, 0, 1.09, 0.02);
-  const exitDoor = box(exit, 1.0, 2.1, 0.05, mats.door, 0, 1.05, 0.04);
+  box(exit, 1.12, 2.18, 0.06, mats.doorFrame, 0, 1.09, 0.02, { cast: false });
+  const exitDoor = box(exit, 1.0, 2.1, 0.05, mats.door, 0, 1.05, 0.04, { cast: false });
   box(exit, 0.35, 0.45, 0.052, mats.glass, 0, 1.55, 0.04, { cast: false });
-  box(exit, 0.6, 0.06, 0.06, mats.steel, 0, 1.0, 0.1);
-  cyl(exit, 0.012, 0.012, 0.6, mats.steel, 0, 1.0, 0.13, { rz: Math.PI / 2 }, 10);
+  box(exit, 0.6, 0.06, 0.06, mats.steel, 0, 1.0, 0.1, { cast: false });
+  cyl(exit, 0.012, 0.012, 0.6, mats.steel, 0, 1.0, 0.13, { rz: Math.PI / 2, cast: false }, 10);
   const sortieTex = T.textPlaneTexture('SORTIE', { w: 512, h: 160, bg: '#0b7a3b', size: 90 });
   box(exit, 0.5, 0.17, 0.04, new THREE.MeshStandardMaterial({ map: sortieTex, emissive: 0xffffff, emissiveMap: sortieTex, emissiveIntensity: 0.9 }), 0, 2.38, 0.03, { cast: false });
   refs.exitDoor = exitDoor;

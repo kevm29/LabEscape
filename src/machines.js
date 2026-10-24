@@ -97,13 +97,14 @@ function buildSequencer(scene, refs, colliders) {
   colliders.push({ minX: -4.0, maxX: -2.4, minZ: -4, maxZ: -3.13 });
 }
 
-export function drawSequencer(refs, state, p = 0) {
+export function drawSequencer(refs, state, p = 0, sample = '') {
   const { canvas: c, tex } = refs.sequencer.screen;
   const g = c.getContext('2d');
   const W = c.width, H = c.height;
   g.fillStyle = '#0c1520'; g.fillRect(0, 0, W, H);
   g.fillStyle = '#14b8a6'; g.fillRect(0, 0, W, 46);
-  g.fillStyle = '#04241f'; g.font = `bold 24px ${FONT}`; g.fillText('NX-7  ·  Run T-07', 18, 31);
+  g.fillStyle = '#04241f'; g.font = `bold 24px ${FONT}`;
+  g.fillText(sample ? `NX-7  ·  Run ${sample}` : 'NX-7', 18, 31);
   g.fillStyle = '#e9eef2';
   if (state === 'idle') {
     g.font = `bold 34px ${FONT}`; g.fillText('Prêt', 30, 120);
@@ -112,6 +113,13 @@ export function drawSequencer(refs, state, p = 0) {
     g.fillText('dans la trappe « FLOWCELL ».', 30, 195);
     g.strokeStyle = '#2a3a4a'; g.lineWidth = 3; g.strokeRect(30, 240, 260, 110);
     g.fillStyle = '#2a3a4a'; g.fillRect(50, 275, 220, 40);
+  } else if (state === 'loaded') {
+    g.font = `bold 30px ${FONT}`; g.fillText('Flowcell détectée', 30, 115);
+    g.font = `22px ${FONT}`; g.fillStyle = '#9fb3c3';
+    g.fillText('Saisissez le numéro d’échantillon', 30, 160);
+    g.fillText('pour lancer le run.', 30, 190);
+    g.fillStyle = '#ffffff'; g.fillRect(30, 225, 300, 50);
+    g.fillStyle = '#5a6670'; g.font = `22px ${FONT}`; g.fillText('N° d’échantillon…', 46, 258);
   } else if (state === 'running') {
     g.font = `bold 30px ${FONT}`; g.fillText('Séquençage en cours…', 30, 115);
     g.fillStyle = '#1d2a38'; g.fillRect(30, 160, W - 60, 26);
@@ -119,12 +127,12 @@ export function drawSequencer(refs, state, p = 0) {
     g.fillStyle = '#9fb3c3'; g.font = `22px ${FONT}`;
     g.fillText(`Cycle ${Math.round(p * 300)} / 300   ·   temps restant ≈ ${Math.max(0, Math.round((1 - p) * 180))} min`, 30, 225);
   } else {
-    g.font = `bold 30px ${FONT}`; g.fillStyle = '#4ade80'; g.fillText('✓ Run terminé', 30, 105);
+    g.font = `bold 30px ${FONT}`; g.fillStyle = '#4ade80'; g.fillText('✓ Séquençage terminé', 30, 105);
     g.fillStyle = '#e9eef2'; g.font = `22px ${FONT}`;
     const rows = [['Lectures', '412 M'], ['Bases ≥ Q30', '93,4 %'], ['Densité de clusters', '1 840 K/mm²'], ['Couverture moyenne', '38 ×']];
     rows.forEach(([k, v], i) => { g.fillStyle = '#9fb3c3'; g.fillText(k, 30, 150 + i * 40); g.fillStyle = '#e9eef2'; g.fillText(v, 330, 150 + i * 40); });
-    g.fillStyle = '#14b8a6'; g.fillRect(30, 320, 330, 52);
-    g.fillStyle = '#04241f'; g.font = `bold 22px ${FONT}`; g.fillText('Imprimer le compte rendu', 46, 354);
+    g.fillStyle = '#14b8a6'; g.fillRect(30, 320, 420, 52);
+    g.fillStyle = '#04241f'; g.font = `bold 21px ${FONT}`; g.fillText('Imprimer le compte-rendu du run', 44, 354);
   }
   tex.needsUpdate = true;
 }
@@ -243,11 +251,10 @@ function buildRobot(scene, refs, colliders) {
 export function drawRobot(refs, { dna, ethanol, running, done, p = 0, step = '' }) {
   const { canvas: c, tex } = refs.robot.screen;
   const g = c.getContext('2d');
-  const W = c.width, H = c.height;
-  g.fillStyle = '#0c1520'; g.fillRect(0, 0, W, H);
+  const W = c.width;
+  g.fillStyle = '#0c1520'; g.fillRect(0, 0, W, c.height);
   g.fillStyle = '#3f82e6'; g.fillRect(0, 0, W, 38);
   g.fillStyle = '#fff'; g.font = `bold 20px ${FONT}`; g.fillText('PipetBot · Librairies', 12, 26);
-  g.font = `19px ${FONT}`;
   if (done) {
     g.fillStyle = '#4ade80'; g.font = `bold 26px ${FONT}`; g.fillText('✓ Flowcell prête', 16, 90);
     g.fillStyle = '#9fb3c3'; g.font = `19px ${FONT}`; g.fillText('Récupérez-la dans le bac', 16, 130); g.fillText('« FLOWCELL ».', 16, 156);
@@ -257,14 +264,17 @@ export function drawRobot(refs, { dna, ethanol, running, done, p = 0, step = '' 
     g.fillStyle = '#1d2a38'; g.fillRect(16, 150, W - 32, 18);
     g.fillStyle = '#3f82e6'; g.fillRect(16, 150, (W - 32) * p, 18);
   } else {
-    const line = (ok, t, y) => { g.fillStyle = ok ? '#4ade80' : '#f87171'; g.fillText(`${ok ? '✓' : '✗'} ${t}`, 16, y); };
-    g.fillStyle = '#e9eef2'; g.font = `bold 20px ${FONT}`; g.fillText('Chargement requis :', 16, 74);
-    g.font = `19px ${FONT}`;
-    line(dna, 'Échantillon d’ADN', 110);
-    line(ethanol, 'Éthanol 80 % (lavages billes)', 142);
-    line(true, 'Cônes, billes, adaptateurs', 174);
-    g.fillStyle = dna && ethanol ? '#4ade80' : '#9fb3c3';
-    g.fillText(dna && ethanol ? '▶ Prêt : appuyez pour lancer' : 'En attente…', 16, 222);
+    const line = (ok, label, y) => {
+      g.fillStyle = '#e9eef2'; g.fillText(label, 16, y);
+      g.fillStyle = ok ? '#4ade80' : '#f87171'; g.fillText(ok ? '✓ OK' : '✗ manquant', 210, y);
+    };
+    g.font = `bold 20px ${FONT}`; g.fillStyle = '#e9eef2'; g.fillText('État du chargement', 16, 74);
+    g.font = `20px ${FONT}`;
+    line(true, 'Cônes', 112);
+    line(dna, 'Échantillon', 146);
+    line(ethanol, 'Réactif', 180);
+    g.fillStyle = '#9fb3c3'; g.font = `18px ${FONT}`;
+    g.fillText(dna && ethanol ? 'Démarrage…' : 'En attente…', 16, 226);
   }
   tex.needsUpdate = true;
 }
