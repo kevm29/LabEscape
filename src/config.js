@@ -24,7 +24,7 @@ export const CONFIG = {
   reach: 2.3,
   // Statistiques : adresse « /exec » du script Google Sheets (voir tools/README-statistiques.md).
   // Vide = aucun envoi. Les envois ne fonctionnent que depuis la version GitHub Pages.
-  statsUrl: '',
+  statsUrl: 'https://script.google.com/macros/s/AKfycbwOd0hhbkQskElcxoSNTID5k7L_UowNIgUFprj56iPXraptnnseLiNrNkFRtHiIeyk/exec',
   // Version du jeu, enregistrée avec chaque partie
   version: '2026-10-25',
 };
