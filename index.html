@@ -273,6 +273,13 @@
   #win { position: fixed; inset: 0; z-index: 60; display: none; place-items: center; background: rgba(4,8,6,0.85); text-align: center; }
   #win.show { display: grid; }
   #win h2 { font-size: 48px; margin: 0 0 8px; }
+  #win-splits { margin: 6px auto 0; border-collapse: collapse; font-size: 14px; min-width: 300px; text-align: left; }
+  #win-splits td { padding: 5px 10px; border-bottom: 1px solid var(--line); }
+  #win-splits td:last-child { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  #identity { z-index: 55; }
+  #id-name { display: block; width: 100%; margin-top: 6px; font: 600 18px var(--font); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: #0f1419; color: var(--ink); }
+  #id-name:focus { outline: 3px solid rgba(242,194,0,0.4); }
+  #id-err { color: #fca5a5; font-size: 13px; min-height: 1.2em; margin-top: 6px; }
 </style>
 <script type="importmap">
   { "imports": { "three": "./lib/three/three.module.min.js" } }
@@ -431,7 +438,22 @@
     <div class="badge">LABO ÉVACUÉ</div>
     <h2>Analyses terminées !</h2>
     <p class="lede" style="margin:0">Les manips de Tom sont bouclées, et vous quittez le labo en bonne et due forme.</p>
-    <p class="lede">Temps : <b id="win-time"></b></p>
+    <p class="lede">Bravo <b id="win-name"></b> ! Temps : <b id="win-time"></b></p>
+    <table id="win-splits"></table>
+  </div>
+</div>
+
+<div id="identity" class="modal">
+  <div class="card">
+    <div class="who">
+      <div class="avatar">SS</div>
+      <div><div style="font-weight:700">M. Sé</div><div style="font-size:12px;color:var(--muted)">Seb Sé, agent de sécurité — par l’interphone</div></div>
+    </div>
+    <p style="margin:0 0 12px;line-height:1.55;color:#dfe6ea">Bonsoir ! Avant que je vous ouvre le labo, j’ai besoin de noter qui entre. Votre nom, s’il vous plaît ?</p>
+    <label for="id-name" style="font-weight:600;font-size:14px">Prénom et nom, ou pseudo</label>
+    <input id="id-name" type="text" maxlength="40" autocomplete="off" spellcheck="false">
+    <div id="id-err" role="status"></div>
+    <button id="id-ok" class="primary">Entrer dans le labo</button>
   </div>
 </div>
 

@@ -46,3 +46,6 @@
 - ✅ Quêtes : 1 EPI, puis 2 séquençage T-07 et 3 compte rendu du gel T-08 après lecture du carnet.
 - ✅ Séquenceur : saisie du n° d'échantillon T-07, « Séquençage terminé », « Imprimer le compte-rendu du run ».
 - ✅ Papiers à taille réelle.
+- ✅ Plus d'ombres parasites des objets fixés au mur (horloge, interrupteur, digicode, distributeurs).
+- ✅ M. Sé demande l'identité du joueur à l'entrée.
+- ✅ Chronométrage par étape + envoi vers Google Sheets.

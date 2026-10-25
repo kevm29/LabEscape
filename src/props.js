@@ -404,6 +404,7 @@ function buildLightSwitch(scene, refs) {
   rbox(s, 0.085, 0.085, 0.012, 0.006, std({ color: 0xf4f4f2, roughness: 0.4 }), 0, 0, 0);
   const rocker = rbox(s, 0.05, 0.05, 0.012, 0.005, std({ color: 0xffffff, roughness: 0.35 }), 0, 0, 0.008);
   refs.lightSwitch = { group: s, rocker };
+  s.traverse((o) => { o.castShadow = false; }); // fixé au mur : pas d'ombre (les murs n'en projettent pas)
 }
 
 // ---------- Poubelle à gants (mur est) ----------
@@ -459,7 +460,7 @@ function buildSink(scene, refs, colliders) {
   const water = cyl(sk, 0.007, 0.009, 1.02 - by, std({ color: 0xbfe6ff, transparent: true, opacity: 0.6, roughness: 0.05, emissive: 0x335566, emissiveIntensity: 0.2 }), 0.0, (1.02 + by) / 2, 0, { cast: false }, 10);
   water.visible = false;
   // savon
-  rbox(sk, 0.08, 0.2, 0.1, 0.01, mats.white, 0.27, 1.3, -0.35);
+  rbox(sk, 0.08, 0.2, 0.1, 0.01, mats.white, 0.27, 1.3, -0.35, { cast: false });
   refs.sink = { group: sk, water, basinY: by, basinX: bcx };
   colliders.push({ minX: 4.34, maxX: 5, minZ: 0.78, maxZ: 2.02 });
 }

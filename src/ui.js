@@ -446,8 +446,39 @@ export class UI {
     $('goggles').classList.toggle('on', on);
   }
 
-  showWin(timeStr) {
+  showWin(timeStr, name = '', rows = []) {
     $('win-time').textContent = timeStr;
+    $('win-name').textContent = name;
+    const t = $('win-splits');
+    t.innerHTML = '';
+    for (const [label, value] of rows) {
+      const tr = document.createElement('tr');
+      const a = document.createElement('td'); a.textContent = label;
+      const b = document.createElement('td'); b.textContent = value;
+      tr.append(a, b);
+      t.appendChild(tr);
+    }
     $('win').classList.add('show');
+  }
+
+  // M. Sé demande l'identité du joueur avant d'ouvrir le labo
+  askName() {
+    return new Promise((resolve) => {
+      const el = $('identity');
+      const input = $('id-name'), err = $('id-err');
+      el.classList.add('show');
+      setTimeout(() => input.focus(), 50);
+      const ok = () => {
+        const v = input.value.trim().replace(/\s+/g, ' ');
+        if (v.length < 2) { sfx.error(); err.textContent = 'Il me faut au moins un prénom ou un pseudo.'; input.focus(); return; }
+        el.classList.remove('show');
+        $('id-ok').removeEventListener('click', ok);
+        input.removeEventListener('keydown', onKey);
+        resolve(v);
+      };
+      const onKey = (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); ok(); } };
+      $('id-ok').addEventListener('click', ok);
+      input.addEventListener('keydown', onKey);
+    });
   }
 }

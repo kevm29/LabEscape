@@ -428,6 +428,7 @@ export function buildRoom(scene) {
   tuft.scale.set(0.45, 0.6, 1.2);
   refs.gloveBox = gd;
   refs.gloveTuft = tuft;
+  gd.traverse((o) => { o.castShadow = false; }); // fixé au mur : pas d'ombre (les murs n'en projettent pas)
 
   // panneau EPI
   plane(scene, 0.8, 0.4, labelMat(T.ppeSignTexture()), minX + 0.006, 2.1, 1.25, { ry: Math.PI / 2 });
@@ -597,6 +598,7 @@ export function buildRoom(scene) {
   const led = add(kp, new THREE.SphereGeometry(0.006, 10, 8), new THREE.MeshStandardMaterial({ color: 0xff2020, emissive: 0xff2020, emissiveIntensity: 2 }), 0.04, 0.072, 0.016);
   refs.keypad = kp;
   refs.keypadLed = led;
+  kp.traverse((o) => { o.castShadow = false; }); // fixé au mur : pas d'ombre (les murs n'en projettent pas)
 
 
   // ===== MUR SUD : affiche + horloge =====
@@ -612,6 +614,7 @@ export function buildRoom(scene) {
   const minHand = box(clock, 0.008, 0.12, 0.004, mats.black, 0, 0.05, 0.028, { cast: false });
   const secHand = box(clock, 0.003, 0.13, 0.003, mats.redCap, 0, 0.05, 0.031, { cast: false });
   refs.clock = { hourHand, minHand, secHand };
+  clock.traverse((o) => { o.castShadow = false; }); // fixé au mur : pas d'ombre (les murs n'en projettent pas)
 
   return { colliders, refs };
 }

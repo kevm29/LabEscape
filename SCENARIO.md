@@ -5,6 +5,9 @@ Trame définie par Kevin (24/10/2026). **Partie complète jouable**, de l'entré
 ## Histoire
 Tom, le doctorant, est tombé malade avant d'avoir fini ses manips. Le joueur est le stagiaire du moment : M. Sé (Seb Sé, agent de sécurité, par l'interphone) lui a ouvert le labo pour finaliser les analyses de Tom avant le week-end. D'après Tom, « tout est accessible, d'une façon ou d'une autre ».
 
+## Entrée
+M. Sé demande le nom (prénom et nom, ou pseudo) du stagiaire par l'interphone avant d'ouvrir le labo. Le chronomètre démarre à ce moment-là.
+
 ## Chaîne d'énigmes
 1. **Quête 1 — Mettre ses EPI** : blouse, lunettes, gants (gants en dernier). La blouse du **Dr. P. Hemick** a une **clé dorée** dans la poche (visible en baissant la tête).
 2. **Tiroir « Paul »** (clé dorée) → **carnet de Paul** : post-it avec le mot de passe du PC **LB_026**, et ce qu'il reste à faire. **Lire le carnet** débloque les quêtes **2 — Finaliser le séquençage du patient T-07** et **3 — Rendre le compte rendu du gel du patient T-08**.
@@ -40,6 +43,9 @@ Tom, le doctorant, est tombé malade avant d'avoir fini ses manips. Le joueur es
 - La tasse de café du bureau : un clic et M. Sé la confisque (on ne boit pas au labo).
 - Papiers à taille réelle : comptes rendus A4, petite note de Tom, brouillon froissé, carnet ligné.
 - Les vitres d'une machine (PipetBot, hotte) comptent comme la machine : on ne peut plus « poser » un objet derrière par erreur.
+
+## Statistiques
+Temps intermédiaires (EPI mis, carnet lu, gel rendu, séquençage fini, sortie), avertissements DASRI, tasse confisquée, codes faux, objets mal utilisés. Affichés à la fin, et envoyés dans une feuille Google Sheets (voir `tools/README-statistiques.md`), y compris pour une partie abandonnée.
 
 ## Pistes ouvertes
 - Rien de bloquant. Idées : indices gradués de M. Sé si on bloque longtemps, sauvegarde de la progression.

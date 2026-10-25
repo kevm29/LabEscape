@@ -9,6 +9,8 @@ import { Game } from './game.js';
 import { UI } from './ui.js';
 import { updateTweens } from './tween.js';
 import { initAudio } from './audio.js';
+import { startSession, sendStats } from './stats.js';
+import { CONFIG } from './config.js';
 
 // ---------- rendu ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -59,17 +61,22 @@ function lock() {
   }
 }
 
-document.getElementById('start-btn').addEventListener('click', () => {
+document.getElementById('start-btn').addEventListener('click', async () => {
   initAudio();
-  started = true;
   startEl.classList.add('hidden');
+  const name = await ui.askName(); // M. Sé note l'identité du stagiaire
+  startSession(name);
+  started = true;
   document.body.classList.add('playing');
   lock();
   setTimeout(() => {
-    ui.toast('Bienvenue, et merci de remplacer Tom au pied levé ! Avant toute manip : blouse, lunettes et gants. Tout est au vestiaire, sur votre gauche.',
+    ui.toast(`Merci ${name.split(' ')[0]}, et merci de remplacer Tom au pied levé ! Avant toute manip : blouse, lunettes et gants. Tout est au vestiaire, sur votre gauche.`,
       { speaker: 'M. Sé', duration: 8 });
   }, 900);
 });
+
+// partie abandonnée (onglet fermé) : on envoie quand même les temps atteints
+addEventListener('pagehide', () => { if (started && !game.finished) sendStats('abandon', { dasri: game.state.dasriWarnings, mug: game.state.mugGone }); });
 
 pauseEl.addEventListener('click', () => { pauseEl.classList.remove('show'); lock(); });
 
@@ -177,4 +184,4 @@ renderer.setAnimationLoop(() => {
 });
 
 // accès console pour déboguer / tester
-window.lab = { scene, camera, player, game, ui, refs, renderer, lighting, get frame() { return frame; } };
+window.lab = { scene, camera, player, game, ui, refs, renderer, lighting, CONFIG, get frame() { return frame; } };

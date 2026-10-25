@@ -22,4 +22,9 @@ export const CONFIG = {
   pocketHintDelay: 45,
   // Distance max d'interaction (m)
   reach: 2.3,
+  // Statistiques : adresse « /exec » du script Google Sheets (voir tools/README-statistiques.md).
+  // Vide = aucun envoi. Les envois ne fonctionnent que depuis la version GitHub Pages.
+  statsUrl: '',
+  // Version du jeu, enregistrée avec chaque partie
+  version: '2026-10-25',
 };

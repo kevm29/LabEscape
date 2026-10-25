@@ -32,6 +32,10 @@ Ou activer **GitHub Pages** sur la branche `main` (Settings → Pages → Deploy
 
 Le scénario complet est décrit dans [`SCENARIO.md`](SCENARIO.md), les retours à intégrer dans [`BACKLOG.md`](BACKLOG.md). Les codes sont dans `src/config.js`.
 
+## Statistiques des parties
+
+M. Sé demande le nom du joueur à l'entrée. Le jeu chronomètre chaque étape (EPI, carnet lu, gel rendu, séquençage, sortie) et compte quelques erreurs, puis envoie une ligne par partie (terminée ou abandonnée) dans une feuille Google Sheets. Mise en place : [`tools/README-statistiques.md`](tools/README-statistiques.md). Fonctionne depuis GitHub Pages uniquement.
+
 ## Organisation du code
 
 ```
@@ -49,7 +53,9 @@ src/game.js         état de partie, interactions, inventaire, énigmes
 src/ui.js           toasts, dialogues, digicode, cadenas, PC, microscope, inventaire
 src/textures.js     textures dessinées par canvas (aucune image externe)
 src/audio.js        bruitages synthétisés (Web Audio)
-src/config.js       codes des énigmes et réglages
+src/config.js       codes des énigmes, réglages, adresse des statistiques
+src/stats.js        chronométrage et envoi des résultats
+tools/              script Google Sheets pour recevoir les statistiques
 lib/three/          Three.js r160 (licence MIT), embarqué pour fonctionner hors ligne
 ```
 

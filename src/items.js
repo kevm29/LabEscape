@@ -1,5 +1,6 @@
 // Objets d'inventaire : nom, icône (SVG), vue rapprochée (HTML).
 import { CONFIG } from './config.js';
+import { session } from './stats.js';
 
 const keySvg = (color, size = 30) => `<svg viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true">
   <circle cx="20" cy="32" r="12" fill="none" stroke="${color}" stroke-width="7"/>
@@ -223,9 +224,13 @@ export const ITEMS = {
         <tr><td>Couverture moyenne</td><td>38 ×</td></tr>
         <tr><td>Statut</td><td><b style="color:#166534">PASS</b></td></tr>
       </table>
-      <footer>Opérateur : stagiaire, pour T. Attot</footer>`, 'report'),
+      <footer>Opérateur : ${escapeHtml(session.name) || 'stagiaire'}, pour T. Attot</footer>`, 'report'),
   },
 };
+
+function escapeHtml(t) {
+  return String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 
 export function makeItem(id) {
   return { id, ...ITEMS[id] };

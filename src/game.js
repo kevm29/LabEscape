@@ -9,6 +9,7 @@ import { makeItemMesh } from './items3d.js';
 import { KEYS_ROOM } from './textures.js';
 import { tween, ease, wait } from './tween.js';
 import { sfx } from './audio.js';
+import { session, mark, count, sendStats, formatTime, STEP_LABELS } from './stats.js';
 
 const LEROY = 'M. Sé';
 const LEROY_ROLE = 'Seb Sé, agent de sécurité — par l’interphone';
@@ -663,6 +664,7 @@ export class Game {
         if (held.solvent && this.current.machine) { this.ui.toast('Ce réactif n’est pas adapté.', { duration: 2.5 }); return; }
         this.ui.toast(USELESS[this.uselessIdx % USELESS.length], { duration: 2.5 });
         this.uselessIdx++;
+        count('useless');
         return;
       }
       if (this.hit) this.dropItem(held, this.hit);
@@ -843,6 +845,7 @@ export class Game {
   learnQuests() {
     if (this.state.questsKnown) return;
     this.state.questsKnown = true;
+    mark('carnet');
     this.refreshHud();
     sfx.success();
     this.ui.toast('Nouvelles quêtes : finaliser le séquençage du patient T-07, et rendre le compte rendu du gel du patient T-08.', { tone: 'success', duration: 6 });
@@ -891,6 +894,7 @@ export class Game {
     this.refreshHud();
     if (this.equipped && !this.state.equippedAnnounced) {
       this.state.equippedAnnounced = true;
+      mark('epi');
       this.equippedAt = this.time;
       setTimeout(() => {
         sfx.success();
@@ -1102,8 +1106,8 @@ export class Game {
     }
     const r = await this.ui.pc({
       locked: !state.pcUnlocked,
-      checkPassword: (v) => v.trim().toUpperCase() === CONFIG.pcPassword,
-      check: (v) => v === CONFIG.gelCode,
+      checkPassword: (v) => this.checked(v.trim().toUpperCase() === CONFIG.pcPassword),
+      check: (v) => this.checked(v === CONFIG.gelCode),
       onWrong: () => this.ui.dialog({
         speaker: LEROY, role: LEROY_ROLE,
         text: 'Vous êtes sûr de vous ?<br><br>Où avez-vous trouvé ce code ?',
@@ -1122,6 +1126,7 @@ export class Game {
     }
     if (r === 'ok') {
       state.laptop = 'done';
+      mark('gel');
       drawLaptop(refs, 'done');
       await this.printSheet(refs.printer.sheet);
       state.reportPrinted = true;
@@ -1202,7 +1207,7 @@ export class Game {
   async useFridgeKeypad() {
     const { state } = this;
     if (state.fridgeUnlocked) { this.setFridge(!state.fridgeOpen); return; }
-    const ok = await this.ui.keypad({ title: 'Frigo +4 °C', length: CONFIG.fridgeCode.length, check: (c) => c === CONFIG.fridgeCode });
+    const ok = await this.ui.keypad({ title: 'Frigo +4 °C', length: CONFIG.fridgeCode.length, check: (c) => this.checked(c === CONFIG.fridgeCode) });
     if (!ok) return;
     state.fridgeUnlocked = true;
     const led = this.refs.fridge.led.material;
@@ -1526,6 +1531,7 @@ export class Game {
         checkSample: (v) => {
           const n = v.replace(/\s/g, '').replace(/^T(\d)/, 'T-$1');
           if (n === 'T-07') return true;
+          count('wrongCodes');
           return /^T-\d+$/.test(n) ? `Aucune librairie « ${n} » sur cette flowcell.` : 'Format attendu : T-00.';
         },
       });
@@ -1539,6 +1545,7 @@ export class Game {
       onPrint: () => {
         if (s.seqPrinted) return;
         s.seqPrinted = true;
+        mark('seq');
         this.printSheet(this.refs.printer.seqSheet, 0.006).then(() => this.refreshHud());
       },
     });
@@ -1575,7 +1582,7 @@ export class Game {
       this.ui.toast('Le voyant est vert : la porte est déverrouillée.');
       return;
     }
-    const ok = await this.ui.keypad({ title: 'Porte de sortie', length: CONFIG.exitCode.length, keys: KEYS_ROOM, check: (c) => c === CONFIG.exitCode });
+    const ok = await this.ui.keypad({ title: 'Porte de sortie', length: CONFIG.exitCode.length, keys: KEYS_ROOM, check: (c) => this.checked(c === CONFIG.exitCode) });
     if (ok) {
       this.state.exitOpen = true;
       const led = this.refs.keypadLed.material;
@@ -1589,9 +1596,19 @@ export class Game {
   }
 
   win() {
-    const s = Math.round((performance.now() - this.startTime) / 1000);
+    if (this.finished) return;
+    this.finished = true;
+    mark('exit');
+    sendStats('terminée', { dasri: this.state.dasriWarnings, mug: this.state.mugGone });
     this.ui.openModal();
-    this.ui.showWin(`${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`);
+    const rows = ['epi', 'carnet', 'gel', 'seq', 'exit'].map((k) => [STEP_LABELS[k], formatTime(session.splits[k])]);
+    this.ui.showWin(formatTime(session.splits.exit), session.name, rows);
+  }
+
+  // Compte les codes faux (statistiques) ; renvoie le résultat de la vérification
+  checked(ok) {
+    if (!ok) count('wrongCodes');
+    return ok;
   }
 }
 
