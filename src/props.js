@@ -498,15 +498,6 @@ function buildFridge(scene, refs, colliders) {
   box(door, 0.012, H - 0.12, W - 0.08, inner, 0.002, H / 2, -W / 2, { cast: false });
   box(door, 0.03, 0.5, 0.04, mats.darkSteel, -0.065, 1.15, -W + 0.07);
   plane(door, 0.24, 0.12, std({ map: T.fridgeLabelTexture() }), -0.051, 1.55, -W / 2, { ry: -Math.PI / 2 });
-  // post-it sur la porte
-  const postit = canvasTex(256, 256, (g) => {
-    g.fillStyle = '#fff27a'; g.fillRect(0, 0, 256, 256);
-    g.fillStyle = 'rgba(0,0,0,0.06)'; g.fillRect(0, 0, 256, 34);
-    g.fillStyle = '#1e3a8a'; g.textAlign = 'center';
-    const lines = [['bold 25px', 'Limitez les'], ['bold 25px', 'ouvertures SVP !'], ['21px', 'Ne l’ouvrir que'], ['21px', 'si besoin, pour'], ['21px', 'ne pas le réchauffer.']];
-    lines.forEach(([f, t], i) => { g.font = `${f} "Segoe Print", "Comic Sans MS", cursive`; g.fillText(t, 128, 78 + i * 38); });
-  });
-  plane(door, 0.13, 0.13, std({ map: postit, roughness: 0.9 }), -0.052, 1.32, -W / 2 + 0.12, { ry: -Math.PI / 2, rz: 0.06 });
   // clavier à code sur la porte
   const kp = new THREE.Group();
   kp.position.set(-0.056, 1.3, -W + 0.17);
@@ -583,6 +574,15 @@ function buildFreezer(scene, refs, colliders) {
   const disp = T.textPlaneTexture('-80 °C', { bg: '#000', fg: '#7fdcff', size: 72 });
   plane(door, 0.22, 0.08, std({ color: 0x0c1a12, emissive: 0x6ad1ff, emissiveIntensity: 0.6, emissiveMap: disp }), -W / 2 - 0.1, 1.7, 0.061);
   plane(door, 0.3, 0.06, std({ map: labelTex('ÉCHANTILLONS -80 °C', { w: 512, h: 96, bg: '#ffffff', fg: '#1e5bb8', size: 42 }) }), -W / 2, 1.5, 0.061);
+  // post-it sur la porte du -80 °C
+  const postit = canvasTex(256, 256, (g) => {
+    g.fillStyle = '#fff27a'; g.fillRect(0, 0, 256, 256);
+    g.fillStyle = 'rgba(0,0,0,0.06)'; g.fillRect(0, 0, 256, 34);
+    g.fillStyle = '#1e3a8a'; g.textAlign = 'center';
+    const lines = [['bold 25px', 'Limitez les'], ['bold 25px', 'ouvertures SVP !'], ['21px', 'Ne l’ouvrir que'], ['21px', 'si besoin, pour'], ['21px', 'ne pas le réchauffer.']];
+    lines.forEach(([f, t], i) => { g.font = `${f} "Segoe Print", "Comic Sans MS", cursive`; g.fillText(t, 128, 78 + i * 38); });
+  });
+  plane(door, 0.14, 0.14, std({ map: postit, roughness: 0.9 }), -W / 2 + 0.15, 1.27, 0.062, { rz: -0.06 });
   // portoir où l'on range l'ARN (étagère du milieu, à l'avant)
   const rack = new THREE.Group();
   rack.position.set(0.18, 0.96, 0.2);

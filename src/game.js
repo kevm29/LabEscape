@@ -721,6 +721,13 @@ export class Game {
         this.ui.toast('Le frigo ! On ne le laisse pas ouvert, il se réchauffe. Refermez-le.', { speaker: LEROY, tone: 'danger', duration: 6 });
       }
     } else if (!s.fridgeOpen) this.lastFridgeNag = null;
+    if (s.cabinetOpen && far(this.refs.cabinet.group.position)) {
+      if (this.time - (this.lastCabinetNag ?? -99) > NAG_EVERY) {
+        this.lastCabinetNag = this.time;
+        sfx.buzzer();
+        this.ui.toast('L’armoire de sécurité ! On ne la laisse pas ouverte : ce sont des produits inflammables. Refermez-la.', { speaker: LEROY, tone: 'danger', duration: 6 });
+      }
+    } else if (!s.cabinetOpen) this.lastCabinetNag = null;
     if (s.uvOn) {
       const uvPos = this.refs.transillum.group.getWorldPosition(new THREE.Vector3());
       if (far(uvPos) && this.time - (this.lastUvNag ?? -99) > NAG_EVERY) {
@@ -1305,8 +1312,8 @@ export class Game {
     await this.dropIce(ice, fz);
     await tween(0.6, (k) => { fz.door.rotation.y = 1.6 * (1 - k); }, { easing: ease.inOut });
     fz.coldLight.intensity = 0;
-    this.ui.toast('Un bloc de glace est tombé du congélateur ! Les ARN, eux, sont bien au froid : à température ambiante, les RNases les dégradent en quelques minutes.',
-      { speaker: LEROY, duration: 8 });
+    this.ui.toast('C’est très gentil de le ranger, mais à mon avis cet ARN n’est plus vraiment utilisable : resté au frigo, il a eu tout le temps d’être dégradé par les RNases. Un ARN se garde à -80 °C, sans jamais traîner ailleurs… Et c’est quoi, ce bloc de glace ?',
+      { speaker: LEROY, duration: 9 });
     this.end();
   }
 

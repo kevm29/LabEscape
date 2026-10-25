@@ -56,8 +56,10 @@
 - ✅ Messages plus gros, durée selon la longueur, en pause pendant la lecture d'un objet.
 - ✅ Encadré « Test de viabilité cellulaire » au microscope.
 - ✅ Message rouge de M. Sé en prenant l'ARN -80 °C dans le frigo.
-- ✅ Post-it sur le frigo « Limitez les ouvertures SVP ».
+- ✅ Post-it « Limitez les ouvertures SVP » sur le congélateur -80 °C.
 - ✅ Seb Sé ingénieur sécurité.
 - ✅ Tasse remplie de café, « Boire le café ».
 - ✅ Poches des blouses accrochées fouillables (clé dans celle du Dr. Hemick).
 - ✅ Rappels rouges : frigo laissé ouvert, UV laissés allumés.
+- ✅ Message de M. Sé en rangeant l'ARN au -80 °C (« plus vraiment utilisable »).
+- ✅ Rappel rouge : armoire de sécurité laissée ouverte.

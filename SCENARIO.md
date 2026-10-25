@@ -16,8 +16,8 @@ M. Sé demande le nom (prénom et nom, ou pseudo) du stagiaire par l'interphone 
 5. **Compte rendu imprimé** au bureau : signé T. ATTOT, **Poste 51.23**.
 6. **Tiroir « Tom »** : cadenas à molettes **5123** → petite **note de Tom** (« … Je la garde pour m'en souvenir. ») avec une lame scotchée par ses deux bouts. On regarde la note (touche maintenue) et un **clic décroche la lame**.
 7. **Microscope** : cellule de Malassez, coloration de viabilité. Cellules rosées (vivantes) par quart, de gauche à droite et de haut en bas : **7 7 6 4**.
-8. **Frigo +4 °C** (clavier) **7764**, avec un post-it « Limitez les ouvertures SVP » → seuls l'**ARN -80 °C** et le **kit d'extraction d'ADN** se prennent. Prendre l'ARN déclenche un message rouge de M. Sé (« Mais qu'est-ce que ce tube fait ici ? »).
-9. **Congélateur -80 °C** : on y range l'ARN (tube visible dans son portoir) → nuage de froid → un **bloc de glace** glisse, tombe et rebondit.
+8. **Frigo +4 °C** (clavier) **7764** → seuls l'**ARN -80 °C** et le **kit d'extraction d'ADN** se prennent. Prendre l'ARN déclenche un message rouge de M. Sé (« Mais qu'est-ce que ce tube fait ici ? »).
+9. **Congélateur -80 °C** (post-it « Limitez les ouvertures SVP ») : on y range l'ARN (tube visible dans son portoir) → nuage de froid → un **bloc de glace** glisse, tombe et rebondit. M. Sé : « C'est très gentil de le ranger, mais à mon avis cet ARN n'est plus vraiment utilisable… ».
 10. **Évier** : faire fondre la glace sous le robinet → la **petite clé argentée** reste au fond de l'évier, à ramasser.
 11. **Placard à l'arrière de la paillasse centrale** (côté hottes, 4ᵉ porte depuis l'ouest) → **protocole** de séquençage de Tom.
 12. **Incubateur CO₂** (petite clé) → **flasque T-07** (les flasques T-05 et T-06 sont des leurres).
@@ -41,7 +41,7 @@ M. Sé demande le nom (prénom et nom, ou pseudo) du stagiaire par l'interphone 
 - **Ctrl** maintenu = s'accroupir.
 - Tous les tiroirs et placards se ferment et se rouvrent.
 - La tasse de café du bureau (remplie) : « Boire le café » → M. Sé la confisque (on ne boit pas au labo).
-- Rappels de M. Sé (message rouge, toutes les 20 s) : frigo laissé ouvert quand on s'en éloigne, UV laissés allumés quand on s'éloigne du transilluminateur.
+- Rappels de M. Sé (message rouge, toutes les 20 s) : frigo ou armoire de sécurité laissés ouverts quand on s'en éloigne, UV laissés allumés quand on s'éloigne du transilluminateur.
 - Messages en haut de l'écran plus grands ; leur durée dépend de leur longueur et le chrono est en pause pendant qu'on regarde un objet ou qu'une fenêtre est ouverte.
 
 ## Aides données en cours de jeu
