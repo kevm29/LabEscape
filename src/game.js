@@ -12,7 +12,7 @@ import { sfx } from './audio.js';
 import { session, mark, count, sendStats, formatTime, STEP_LABELS } from './stats.js';
 
 const LEROY = 'M. Sé';
-const LEROY_ROLE = 'Seb Sé, agent de sécurité — par l’interphone';
+const LEROY_ROLE = 'Seb Sé, ingénieur sécurité — par l’interphone';
 const SHIRT = 0x3d4a58;
 const COAT = 0xf3f5f6;
 
@@ -161,9 +161,16 @@ export class Game {
     // ---- tasse de café ----
     this.register(refs.mug, {
       name: 'la tasse',
-      label: () => 'Tasse de café',
+      label: () => 'Boire le café',
       action: () => this.confiscateMug(),
     });
+
+    // ---- poches des blouses accrochées ----
+    refs.coats.forEach((c) => c.pockets.forEach((p) => this.register(p, {
+      name: 'la poche',
+      label: () => 'Fouiller la poche',
+      action: () => this.searchCoatPocket(c),
+    })));
 
     // ---- portes ----
     this.register(refs.entryDoor, {
@@ -377,6 +384,7 @@ export class Game {
     this.registerPickup(refs.protocolBinder, 'protocole', {
       label: 'Prendre le classeur « Protocole »',
       message: 'Le protocole de séquençage de Tom ! Maintenez sa touche pour le lire.',
+      onTake: () => { state.protocolTaken = true; },
     });
 
     // ---- incubateur CO2 ----
@@ -566,9 +574,13 @@ export class Game {
       name: it.name,
       label: () => `Prendre : ${it.name}`,
       action: () => {
-        if (!this.pickUp(id, `Vous prenez « ${it.name} ». Brrr, c’est froid.`, 2.5)) return;
+        if (!this.pickUp(id, id === 'arn' ? null : `Vous prenez « ${it.name} ». Brrr, c’est froid.`, 2.5)) return;
         mesh.visible = false;
         this.interactables.delete(mesh);
+        if (id === 'arn') {
+          sfx.buzzer();
+          this.ui.toast('Mais qu’est-ce que ce tube fait ici ? Il faut le ranger au bon endroit !', { speaker: LEROY, tone: 'danger', duration: 6 });
+        }
       },
     };
   }
@@ -581,6 +593,7 @@ export class Game {
     this.updateFocus();
     this.enforcePpeLine();
     this.updateCold();
+    this.updateReminders();
     if (this.equippedAt !== null && !this.hintShown && !this.state.keyTaken
       && this.time - this.equippedAt > CONFIG.pocketHintDelay) {
       this.hintShown = true;
@@ -693,6 +706,33 @@ export class Game {
       }
     }
     this.prevPos.copy(p.pos);
+  }
+
+  // Rappels de Seb Sé : frigo laissé ouvert, UV laissés allumés, protocole introuvable
+  updateReminders() {
+    const s = this.state;
+    const cam = this.camera.position;
+    const far = (p) => Math.hypot(cam.x - p.x, cam.z - p.z) > 2.6;
+    const NAG_EVERY = 20;
+    if (s.fridgeOpen && far(this.refs.fridge.front)) {
+      if (this.time - (this.lastFridgeNag ?? -99) > NAG_EVERY) {
+        this.lastFridgeNag = this.time;
+        sfx.buzzer();
+        this.ui.toast('Le frigo ! On ne le laisse pas ouvert, il se réchauffe. Refermez-le.', { speaker: LEROY, tone: 'danger', duration: 6 });
+      }
+    } else if (!s.fridgeOpen) this.lastFridgeNag = null;
+    if (s.uvOn) {
+      const uvPos = this.refs.transillum.group.getWorldPosition(new THREE.Vector3());
+      if (far(uvPos) && this.time - (this.lastUvNag ?? -99) > NAG_EVERY) {
+        this.lastUvNag = this.time;
+        sfx.buzzer();
+        this.ui.toast('Ne laissez pas les UV allumés ! Ça abîme l’ADN du gel, et c’est dangereux pour les yeux. Éteignez-les.', { speaker: LEROY, tone: 'danger', duration: 6 });
+      }
+    } else this.lastUvNag = null;
+    // aide : protocole toujours pas trouvé 5 minutes après avoir rendu le gel
+    if (s.gelDoneAt != null && !s.protocolTaken && this.time - s.gelDoneAt > CONFIG.protocolHintDelay) {
+      this.once('protocol-hint', () => this.ui.toast('Le protocole de Tom ? Il range toujours ses protocoles dans les placards de la paillasse centrale.', { speaker: LEROY, tone: 'hint', duration: 7 }));
+    }
   }
 
   updateCold() {
@@ -827,8 +867,8 @@ export class Game {
       q.push({ id: 'gloves', text: 'Gants', done: s.gloves, sub: true });
     }
     if (s.questsKnown) {
-      q.push({ id: 'seq', text: '2. Finaliser le séquençage du patient T-07', done: s.seqPrinted });
-      q.push({ id: 'gel', text: '3. Rendre le compte rendu du gel du patient T-08', done: s.laptop === 'done' });
+      q.push({ id: 'gel', text: '2. Rendre le compte rendu du gel du patient T-08', done: s.laptop === 'done' });
+      q.push({ id: 'seq', text: '3. Finaliser le séquençage du patient T-07', done: s.seqPrinted });
       if (s.seqPrinted && s.laptop === 'done') q.push({ id: 'exit', text: '4. Sortir du labo', done: false });
     }
     return q;
@@ -848,7 +888,7 @@ export class Game {
     mark('carnet');
     this.refreshHud();
     sfx.success();
-    this.ui.toast('Nouvelles quêtes : finaliser le séquençage du patient T-07, et rendre le compte rendu du gel du patient T-08.', { tone: 'success', duration: 6 });
+    this.ui.toast('Nouvelles quêtes : rendre le compte rendu du gel du patient T-08, puis finaliser le séquençage du patient T-07.', { tone: 'success', duration: 6 });
   }
 
   // ======================================================================
@@ -1126,6 +1166,7 @@ export class Game {
     }
     if (r === 'ok') {
       state.laptop = 'done';
+      state.gelDoneAt = this.time;
       mark('gel');
       drawLaptop(refs, 'done');
       await this.printSheet(refs.printer.sheet);
@@ -1216,7 +1257,7 @@ export class Game {
     await this.setFridge(true);
     const { live, dead } = CONFIG.cellCounts;
     const L = live.reduce((a, b) => a + b, 0), D = dead.reduce((a, b) => a + b, 0);
-    this.ui.toast(`Bien compté ! Le colorant n’entre que dans les cellules mortes, à la membrane abîmée : elles virent au mauve. Ici ${L} vivantes sur ${L + D}, soit ${Math.round((100 * L) / (L + D))} % de viabilité.`,
+    this.ui.toast(`Bien compté ! ${L} cellules vivantes sur ${L + D} : ${Math.round((100 * L) / (L + D))} % de viabilité.`,
       { speaker: LEROY, tone: 'success', duration: 10 });
   }
 
@@ -1567,7 +1608,7 @@ export class Game {
     this.ui.flash('rgba(242,194,0,0.35)');
     await this.ui.dialog({
       speaker: LEROY, role: LEROY_ROLE,
-      text: '<b>On ne boit pas et on ne mange pas dans un laboratoire !</b><br><br>Une tasse posée sur une paillasse, c’est le meilleur moyen d’avaler un produit chimique ou un échantillon par erreur. Je confisque.',
+      text: '<b>Vous alliez boire ce café ?! On ne boit pas et on ne mange pas dans un laboratoire !</b><br><br>Une tasse dans un labo, c’est le meilleur moyen d’avaler un produit chimique ou un échantillon par erreur. Je confisque.',
       tone: 'danger', button: 'Bien compris',
     });
     await tween(0.4, (k) => { refs.mug.scale.setScalar(1 - k); }, { easing: ease.in });
@@ -1603,6 +1644,19 @@ export class Game {
     this.ui.openModal();
     const rows = ['epi', 'carnet', 'gel', 'seq', 'exit'].map((k) => [STEP_LABELS[k], formatTime(session.splits[k])]);
     this.ui.showWin(formatTime(session.splits.exit), session.name, rows);
+  }
+
+  // Fouiller la poche d'une blouse accrochée (la clé de Paul est dans celle du Dr. Hemick)
+  searchCoatPocket(c) {
+    sfx.cloth();
+    if (c.index === CONFIG.keyCoat) {
+      if (this.state.keyTaken) { this.ui.toast('La poche est vide.', { duration: 2.5 }); return; }
+      if (!this.pickUp('clePaul', 'Une petite clé dorée dans la poche de la blouse du Dr. Hemick !', 3.5)) return;
+      this.state.keyTaken = true;
+      return;
+    }
+    const msgs = ['Un stylo et un mouchoir usagé. Rien d’utile.', 'La poche est vide.'];
+    this.ui.toast(c.index === 1 ? msgs[0] : msgs[1], { duration: 3 });
   }
 
   // Compte les codes faux (statistiques) ; renvoie le résultat de la vérification

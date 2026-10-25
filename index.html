@@ -207,21 +207,24 @@
 
   /* microscope */
   #scope { background: rgba(0,0,0,0.92); }
-  #scope .wrap { display: grid; place-items: center; gap: 14px; }
+  #scope .wrap { display: grid; place-items: center; gap: 12px; padding: 0 16px; }
+  #scope-info { max-width: 640px; padding: 10px 16px; border-radius: 10px; background: rgba(20,24,30,0.92); border: 1px solid var(--line); border-left: 4px solid #c084fc; font-size: 15px; line-height: 1.5; color: #dfe6ea; }
   #scope-canvas { width: min(78vmin, 640px); height: min(78vmin, 640px); border-radius: 50%; box-shadow: 0 0 0 10px #050505, 0 0 60px rgba(0,0,0,0.9) inset; }
   #scope-close { padding: 9px 18px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: 500 14px var(--font); cursor: pointer; }
 
   .toast {
-    position: fixed; z-index: 20; left: 50%; top: 22px; transform: translate(-50%, -12px); max-width: min(640px, calc(100vw - 32px));
-    padding: 12px 18px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line);
-    font-size: 15px; line-height: 1.5; opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none;
-    border-left: 3px solid var(--blue); backdrop-filter: blur(6px);
+    position: fixed; z-index: 28; left: 50%; top: 18px; transform: translate(-50%, -12px); width: max-content; max-width: min(760px, calc(100vw - 32px));
+    padding: 16px 22px; border-radius: 14px; background: rgba(14,18,23,0.94); border: 1px solid rgba(255,255,255,0.18);
+    font-size: 18px; font-weight: 500; line-height: 1.5; opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none;
+    border-left: 5px solid var(--blue); box-shadow: 0 12px 40px rgba(0,0,0,0.5); backdrop-filter: blur(6px);
   }
+  .toast.danger { border-color: rgba(239,68,68,0.7); border-left-color: var(--danger); background: rgba(60,12,12,0.95); }
+  .toast.danger .speaker { color: #fca5a5; }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
   .toast.warn { border-left-color: var(--accent); }
   .toast.success { border-left-color: var(--ok); }
   .toast.hint { border-left-color: #c084fc; font-style: italic; }
-  .toast .speaker { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 2px; font-family: var(--mono); }
+  .toast .speaker { display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 2px; font-family: var(--mono); }
   .toast .ok { color: var(--ok); font-weight: 600; margin-left: 6px; white-space: nowrap; }
   .toast .ko { color: #fca5a5; font-weight: 600; margin-left: 6px; white-space: nowrap; }
 
@@ -426,6 +429,7 @@
 
 <div id="scope" class="modal">
   <div class="wrap">
+    <div id="scope-info"><b>Test de viabilité cellulaire</b> — le colorant ne traverse que la membrane abîmée des cellules mortes, qui apparaissent mauve foncé ; les cellules vivantes, intactes, restent rosées.</div>
     <canvas id="scope-canvas" width="720" height="720"></canvas>
     <button id="scope-close">Relever la tête</button>
   </div>
@@ -447,7 +451,7 @@
   <div class="card">
     <div class="who">
       <div class="avatar">SS</div>
-      <div><div style="font-weight:700">M. Sé</div><div style="font-size:12px;color:var(--muted)">Seb Sé, agent de sécurité — par l’interphone</div></div>
+      <div><div style="font-weight:700">M. Sé</div><div style="font-size:12px;color:var(--muted)">Seb Sé, ingénieur sécurité — par l’interphone</div></div>
     </div>
     <p style="margin:0 0 12px;line-height:1.55;color:#dfe6ea">Bonsoir ! Avant que je vous ouvre le labo, j’ai besoin de noter qui entre. Votre nom, s’il vous plaît ?</p>
     <label for="id-name" style="font-weight:600;font-size:14px">Prénom et nom, ou pseudo</label>
@@ -461,7 +465,7 @@
   <div class="start-card">
     <div class="badge">☣ NSB2 — LABORATOIRE</div>
     <h1>Lab <span>Escape</span></h1>
-    <p class="lede">Tom, le doctorant de l’équipe, est tombé malade avant d’avoir fini ses manips. Vous êtes le stagiaire du moment : M. Sé, l’agent de sécurité, vous a ouvert le labo pour finaliser ses analyses avant le week-end. D’après Tom, « tout est accessible, d’une façon ou d’une autre ».</p>
+    <p class="lede">Tom, le doctorant de l’équipe, est tombé malade avant d’avoir fini ses manips. Vous êtes le stagiaire du moment : M. Sé, l’ingénieur sécurité, vous a ouvert le labo pour finaliser ses analyses avant le week-end. D’après Tom, « tout est accessible, d’une façon ou d’une autre ».</p>
     <div class="controls">
       <div class="keys"><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>↑</kbd><kbd>↓</kbd></div><div>Se déplacer</div>
       <div class="keys"><kbd>Souris</kbd></div><div>Regarder autour</div>

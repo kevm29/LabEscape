@@ -49,3 +49,15 @@
 - ✅ Plus d'ombres parasites des objets fixés au mur (horloge, interrupteur, digicode, distributeurs).
 - ✅ M. Sé demande l'identité du joueur à l'entrée.
 - ✅ Chronométrage par étape + envoi vers Google Sheets.
+
+## Retours du 25/10/2026 (après-midi)
+- ✅ Quêtes inversées : gel T-08 puis séquençage T-07 ; carnet sans mention du placard.
+- ✅ Aide « placards de la paillasse centrale » 5 min après le gel si le protocole n'est pas trouvé.
+- ✅ Messages plus gros, durée selon la longueur, en pause pendant la lecture d'un objet.
+- ✅ Encadré « Test de viabilité cellulaire » au microscope.
+- ✅ Message rouge de M. Sé en prenant l'ARN -80 °C dans le frigo.
+- ✅ Post-it sur le frigo « Limitez les ouvertures SVP ».
+- ✅ Seb Sé ingénieur sécurité.
+- ✅ Tasse remplie de café, « Boire le café ».
+- ✅ Poches des blouses accrochées fouillables (clé dans celle du Dr. Hemick).
+- ✅ Rappels rouges : frigo laissé ouvert, UV laissés allumés.

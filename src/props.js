@@ -179,6 +179,9 @@ function buildDesk(scene, refs, colliders) {
     g.strokeStyle = 'rgba(30,15,5,0.8)'; g.lineWidth = 6; g.beginPath(); g.arc(64, 64, 52, 0, Math.PI * 2); g.stroke();
   });
   add(mug, new THREE.CircleGeometry(0.036, 24), std({ map: stain, roughness: 0.5 }), 0, 0.004, 0, { rx: -Math.PI / 2 });
+  // café encore chaud dans la tasse
+  add(mug, new THREE.CircleGeometry(0.037, 24), std({ color: 0x3b2110, roughness: 0.15, metalness: 0.1 }), 0, 0.075, 0, { rx: -Math.PI / 2, cast: false });
+  add(mug, new THREE.RingGeometry(0.03, 0.037, 24), std({ color: 0x9c6a3e, roughness: 0.6, transparent: true, opacity: 0.7 }), 0, 0.0752, 0, { rx: -Math.PI / 2, cast: false });
   const drip = canvasTex(256, 64, (g) => {
     g.fillStyle = '#f2efe8'; g.fillRect(0, 0, 256, 64);
     g.fillStyle = 'rgba(110,60,25,0.55)';
@@ -495,6 +498,15 @@ function buildFridge(scene, refs, colliders) {
   box(door, 0.012, H - 0.12, W - 0.08, inner, 0.002, H / 2, -W / 2, { cast: false });
   box(door, 0.03, 0.5, 0.04, mats.darkSteel, -0.065, 1.15, -W + 0.07);
   plane(door, 0.24, 0.12, std({ map: T.fridgeLabelTexture() }), -0.051, 1.55, -W / 2, { ry: -Math.PI / 2 });
+  // post-it sur la porte
+  const postit = canvasTex(256, 256, (g) => {
+    g.fillStyle = '#fff27a'; g.fillRect(0, 0, 256, 256);
+    g.fillStyle = 'rgba(0,0,0,0.06)'; g.fillRect(0, 0, 256, 34);
+    g.fillStyle = '#1e3a8a'; g.textAlign = 'center';
+    const lines = [['bold 25px', 'Limitez les'], ['bold 25px', 'ouvertures SVP !'], ['21px', 'Ne l’ouvrir que'], ['21px', 'si besoin, pour'], ['21px', 'ne pas le réchauffer.']];
+    lines.forEach(([f, t], i) => { g.font = `${f} "Segoe Print", "Comic Sans MS", cursive`; g.fillText(t, 128, 78 + i * 38); });
+  });
+  plane(door, 0.13, 0.13, std({ map: postit, roughness: 0.9 }), -0.052, 1.32, -W / 2 + 0.12, { ry: -Math.PI / 2, rz: 0.06 });
   // clavier à code sur la porte
   const kp = new THREE.Group();
   kp.position.set(-0.056, 1.3, -W + 0.17);

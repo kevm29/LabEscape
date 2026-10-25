@@ -3,20 +3,20 @@
 Trame définie par Kevin (24/10/2026). **Partie complète jouable**, de l'entrée à la sortie. Codes et réglages dans `src/config.js`.
 
 ## Histoire
-Tom, le doctorant, est tombé malade avant d'avoir fini ses manips. Le joueur est le stagiaire du moment : M. Sé (Seb Sé, agent de sécurité, par l'interphone) lui a ouvert le labo pour finaliser les analyses de Tom avant le week-end. D'après Tom, « tout est accessible, d'une façon ou d'une autre ».
+Tom, le doctorant, est tombé malade avant d'avoir fini ses manips. Le joueur est le stagiaire du moment : M. Sé (Seb Sé, ingénieur sécurité, par l'interphone) lui a ouvert le labo pour finaliser les analyses de Tom avant le week-end. D'après Tom, « tout est accessible, d'une façon ou d'une autre ».
 
 ## Entrée
 M. Sé demande le nom (prénom et nom, ou pseudo) du stagiaire par l'interphone avant d'ouvrir le labo. Le chronomètre démarre à ce moment-là.
 
 ## Chaîne d'énigmes
-1. **Quête 1 — Mettre ses EPI** : blouse, lunettes, gants (gants en dernier). La blouse du **Dr. P. Hemick** a une **clé dorée** dans la poche (visible en baissant la tête).
-2. **Tiroir « Paul »** (clé dorée) → **carnet de Paul** : post-it avec le mot de passe du PC **LB_026**, et ce qu'il reste à faire. **Lire le carnet** débloque les quêtes **2 — Finaliser le séquençage du patient T-07** et **3 — Rendre le compte rendu du gel du patient T-08**.
+1. **Quête 1 — Mettre ses EPI** : blouse, lunettes, gants (gants en dernier). La blouse du **Dr. P. Hemick** a une **clé dorée** dans la poche : visible en baissant la tête si on la porte, ou en **fouillant la poche** de la blouse accrochée (poches fouillables sur les 3 blouses).
+2. **Tiroir « Paul »** (clé dorée) → **carnet de Paul** : post-it avec le mot de passe du PC **LB_026**, et ce qu'il reste à faire. **Lire le carnet** débloque les quêtes **2 — Rendre le compte rendu du gel du patient T-08** puis **3 — Finaliser le séquençage du patient T-07** (le carnet ne dit pas où est le protocole).
 3. **PC portable** : allumage → session verrouillée → **LB_026** → compte rendu du patient T-08 bloqué sur « résultat manquant » (pop-up si on veut fermer).
 4. **Gel** : éteindre la lumière (interrupteur près de l'entrée) + allumer les UV du transilluminateur. Les bandes ne sont visibles **qu'avec les UV ET la lumière éteinte**. Lecture du bas (+) vers le haut (−) : **TTGACG**. Mauvais code → « Vous êtes sûr ? Où avez-vous trouvé ce code ? ».
 5. **Compte rendu imprimé** au bureau : signé T. ATTOT, **Poste 51.23**.
 6. **Tiroir « Tom »** : cadenas à molettes **5123** → petite **note de Tom** (« … Je la garde pour m'en souvenir. ») avec une lame scotchée par ses deux bouts. On regarde la note (touche maintenue) et un **clic décroche la lame**.
 7. **Microscope** : cellule de Malassez, coloration de viabilité. Cellules rosées (vivantes) par quart, de gauche à droite et de haut en bas : **7 7 6 4**.
-8. **Frigo +4 °C** (clavier) **7764** → seuls l'**ARN -80 °C** et le **kit d'extraction d'ADN** se prennent (les autres flacons sont du décor).
+8. **Frigo +4 °C** (clavier) **7764**, avec un post-it « Limitez les ouvertures SVP » → seuls l'**ARN -80 °C** et le **kit d'extraction d'ADN** se prennent. Prendre l'ARN déclenche un message rouge de M. Sé (« Mais qu'est-ce que ce tube fait ici ? »).
 9. **Congélateur -80 °C** : on y range l'ARN (tube visible dans son portoir) → nuage de froid → un **bloc de glace** glisse, tombe et rebondit.
 10. **Évier** : faire fondre la glace sous le robinet → la **petite clé argentée** reste au fond de l'évier, à ramasser.
 11. **Placard à l'arrière de la paillasse centrale** (côté hottes, 4ᵉ porte depuis l'ouest) → **protocole** de séquençage de Tom.
@@ -40,7 +40,20 @@ M. Sé demande le nom (prénom et nom, ou pseudo) du stagiaire par l'interphone 
 - Avec un objet en main : clic sur une cible = l'utiliser ; clic sur le sol / un meuble / un tiroir ouvert = **le poser** (on le reprend d'un clic) ; clic sur une cible inadaptée = message en boucle (« Mais que ferais-je avec ça ? »…). Clic droit = ranger.
 - **Ctrl** maintenu = s'accroupir.
 - Tous les tiroirs et placards se ferment et se rouvrent.
-- La tasse de café du bureau : un clic et M. Sé la confisque (on ne boit pas au labo).
+- La tasse de café du bureau (remplie) : « Boire le café » → M. Sé la confisque (on ne boit pas au labo).
+- Rappels de M. Sé (message rouge, toutes les 20 s) : frigo laissé ouvert quand on s'en éloigne, UV laissés allumés quand on s'éloigne du transilluminateur.
+- Messages en haut de l'écran plus grands ; leur durée dépend de leur longueur et le chrono est en pause pendant qu'on regarde un objet ou qu'une fenêtre est ouverte.
+
+## Aides données en cours de jeu
+- Accueil (vestiaire à gauche), fin des EPI (« le Dr. Hemick a sûrement laissé des consignes »).
+- Petite voix 45 s après les EPI si la clé n'est pas trouvée (poche).
+- Astuces d'inventaire (premier objet ramassé, premier objet posé).
+- PC verrouillé / compte rendu bloqué ; UV avec lumière allumée « on ne distingue rien ».
+- Microscope : encadré « Test de viabilité cellulaire ».
+- ARN au mauvais endroit, réactif +4 °C au -80 °C, « quelque chose brille au fond de l'évier ».
+- Hotte / robot : ce qu'il manque ; séquenceur : demande le n° d'échantillon.
+- **5 min après le gel rendu, protocole non trouvé** : M. Sé indique les placards de la paillasse centrale.
+- Explications pédagogiques de M. Sé à chaque étape (gel, viabilité, CO₂, RNases, extraction, billes, Q30).
 - Papiers à taille réelle : comptes rendus A4, petite note de Tom, brouillon froissé, carnet ligné.
 - Les vitres d'une machine (PipetBot, hotte) comptent comme la machine : on ne peut plus « poser » un objet derrière par erreur.
 

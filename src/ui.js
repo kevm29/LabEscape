@@ -27,12 +27,27 @@ export class UI {
     $('crosshair').classList.remove('active');
   }
 
+  // Message en haut de l'écran. Il reste au moins le temps de le lire (≈ 15 caractères / s),
+  // et son chrono est en pause tant qu'on regarde un objet ou qu'une fenêtre est ouverte.
   toast(text, { speaker = null, duration = 5, tone = 'info' } = {}) {
     const el = $('toast');
     el.className = `toast show ${tone}`;
     el.innerHTML = (speaker ? `<span class="speaker">${speaker}</span>` : '') + `<span class="msg">${text}</span>`;
-    clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => el.classList.remove('show'), duration * 1000);
+    const plain = el.textContent.length;
+    this.toastLeft = Math.max(duration, 3 + plain / 15);
+    this.toastLast = performance.now();
+    clearInterval(this.toastTimer);
+    this.toastTimer = setInterval(() => {
+      const now = performance.now();
+      const dt = (now - this.toastLast) / 1000;
+      this.toastLast = now;
+      const paused = this.modalOpen || $('viewer').classList.contains('show');
+      if (!paused) this.toastLeft -= dt;
+      if (this.toastLeft <= 0) {
+        clearInterval(this.toastTimer);
+        el.classList.remove('show');
+      }
+    }, 100);
   }
 
   // Les fenêtres peuvent s'empiler (ex. dialogue par-dessus le PC)

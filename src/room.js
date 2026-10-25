@@ -236,8 +236,13 @@ function makeHangingCoat(name, role) {
   const col = add(g, new THREE.TorusGeometry(0.07, 0.016, 8, 20, Math.PI), mats.coat, 0.012, -0.1, 0, { ry: Math.PI / 2, rx: -0.2 });
   col.scale.set(1, 0.7, 1);
   // poches
-  box(g, 0.012, 0.13, 0.13, mats.coatShade, 0.097, -0.82, -0.11);
-  box(g, 0.012, 0.13, 0.13, mats.coatShade, 0.097, -0.82, 0.11);
+  const pockets = [
+    box(g, 0.016, 0.13, 0.13, mats.coatShade, 0.099, -0.82, -0.11),
+    box(g, 0.016, 0.13, 0.13, mats.coatShade, 0.099, -0.82, 0.11),
+  ];
+  // ourlet de l'ouverture des poches
+  for (const z of [-0.11, 0.11]) box(g, 0.018, 0.01, 0.132, mats.coat, 0.1, -0.755, z, { cast: false });
+  g.userData.pockets = pockets;
   box(g, 0.01, 0.07, 0.07, mats.coatShade, 0.078, -0.4, 0.09);
   // stylo dans la poche poitrine
   cyl(g, 0.005, 0.005, 0.06, mats.blueCap, 0.082, -0.36, 0.11, {}, 8);
@@ -378,7 +383,7 @@ export function buildRoom(scene) {
     coat.position.set(minX + 0.13, 1.93, z);
     coat.rotation.y = (Math.random() - 0.5) * 0.08;
     scene.add(coat);
-    return { group: coat, index: i, ...coatDefs[i], home: coat.position.clone() };
+    return { group: coat, index: i, ...coatDefs[i], home: coat.position.clone(), pockets: coat.userData.pockets };
   });
   addCol(minX, minX + 0.3, 1.95, 3.45);
 

@@ -341,7 +341,7 @@ export function posterTexture() {
   });
   g.fillStyle = '#8a949c';
   g.font = `italic 20px ${FONT}`;
-  g.fillText('L’agent de sécurité — S. Sé', 40, 810);
+  g.fillText('L’ingénieur sécurité — S. Sé', 40, 810);
   return toTexture(c);
 }
 

@@ -20,6 +20,8 @@ export const CONFIG = {
   keyCoat: 0,
   // Délai (s) avant l'indice "regardez vos poches" une fois équipé
   pocketHintDelay: 45,
+  // Délai (s) après le gel rendu avant l'aide « placards de la paillasse centrale »
+  protocolHintDelay: 300,
   // Distance max d'interaction (m)
   reach: 2.3,
   // Statistiques : adresse « /exec » du script Google Sheets (voir tools/README-statistiques.md).

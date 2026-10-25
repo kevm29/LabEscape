@@ -92,8 +92,8 @@ export const ITEMS = {
     view: () => doc(`<div class="hand">Carnet de labo — P. Hemick</div>
       <div class="postit">PC labo<br>mdp : <b>LB_026</b></div>
       <p class="hand">23/10 — Tom malade, arrêté jusqu’à mercredi. Il reste à finir :</p>
-      <p class="hand">• le <b>séquençage du patient T-07</b> (son protocole est rangé dans un placard de la paillasse centrale) ;</p>
-      <p class="hand">• le <b>compte rendu du gel du patient T-08</b> : resté en plan sur le PC, le gel est encore sur le transilluminateur.</p>
+      <p class="hand">• le <b>compte rendu du gel du patient T-08</b> : resté en plan sur le PC, le gel est encore sur le transilluminateur ;</p>
+      <p class="hand">• ensuite, le <b>séquençage du patient T-07</b>, d’après son protocole.</p>
       <p class="hand">Pas le temps de m’en occuper avant de partir…</p>`, 'notebook'),
   },
   compteRendu: {
